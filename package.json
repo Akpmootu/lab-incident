@@ -17,6 +17,7 @@
     "@vitejs/plugin-react": "^5.0.4",
     "better-sqlite3": "^12.4.1",
     "clsx": "^2.1.1",
+    "dayjs": "^1.11.19",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "framer-motion": "^12.34.3",

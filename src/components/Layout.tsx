@@ -11,6 +11,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const navItems = [
     { path: '/', icon: 'fa-solid fa-pen-to-square', label: 'บันทึกอุบัติการณ์' },
     { path: '/dashboard', icon: 'fa-solid fa-chart-pie', label: 'สรุปข้อมูล (Dashboard)' },
+    { path: '/data', icon: 'fa-solid fa-table-list', label: 'ตารางข้อมูล' },
   ];
 
   return (
@@ -126,9 +127,19 @@ export default function Layout({ children }: { children: ReactNode }) {
             </div>
           </div>
           
-          <div className="hidden md:flex items-center gap-2 text-sm font-medium text-slate-500">
-            <i className="fa-solid fa-location-dot text-blue-500"></i>
-            ระบบบันทึกอุบัติการณ์ความเสี่ยง
+          <div className="hidden md:flex items-center gap-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-slate-500">
+              <i className="fa-solid fa-location-dot text-blue-500"></i>
+              ระบบบันทึกอุบัติการณ์ความเสี่ยง
+            </div>
+            <div className="h-4 w-px bg-slate-300"></div>
+            <Link 
+              to="/"
+              className="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              <i className="fa-solid fa-plus"></i>
+              บันทึกใหม่
+            </Link>
           </div>
 
           <div className="flex items-center gap-3">
@@ -213,7 +224,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           </div>
           <div className="flex items-center gap-2 mt-2 sm:mt-0 font-medium">
             <i className="fa-solid fa-code text-slate-400"></i>
-            <span>พัฒนาโดย IT SSJ Satun 2569</span>
+            <span>อรรฆพร ศรีปานรอด นวก.คอม</span>
           </div>
         </footer>
       </div>

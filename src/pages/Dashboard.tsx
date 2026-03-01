@@ -6,6 +6,7 @@ import {
 } from 'recharts';
 import * as XLSX from 'xlsx';
 import Swal from 'sweetalert2';
+import { formatDateTH } from '../lib/dateUtils';
 
 export default function Dashboard() {
   const [incidents, setIncidents] = useState<any[]>([]);
@@ -35,8 +36,8 @@ export default function Dashboard() {
   };
 
   const exportToExcel = () => {
-    const ws = XLSX.utils.json_to_sheet(incidents.map(inc => ({
-      'วันที่': inc.incident_date,
+    const ws = XLSX.utils.json_to_sheet(filteredData.map(inc => ({
+      'วันที่': formatDateTH(inc.incident_date),
       'ประเภทความเสี่ยง': inc.risk_type,
       'ขั้นตอน': inc.process_type || '-',
       'รายการความเสี่ยง': inc.risk_items.join(', ') + (inc.other_risk_item ? `, ${inc.other_risk_item}` : ''),
@@ -44,11 +45,12 @@ export default function Dashboard() {
       'การแก้ไข': inc.initial_response,
       'ระดับผลกระทบ': inc.impact_level,
       'กลุ่ม': inc.group_type,
-      'แนวทางปฏิบัติ': inc.guideline
+      'แนวทางปฏิบัติ': inc.guideline,
+      'ผู้รับผิดชอบ': inc.responsible_person || '-'
     })));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Incidents");
-    XLSX.writeFile(wb, `สรุปอุบัติการณ์_${filterYear}.xlsx`);
+    XLSX.writeFile(wb, `สรุปอุบัติการณ์_ปี_${Number(filterYear) + 543}.xlsx`);
   };
 
   // --- Data Processing for Charts ---
@@ -118,10 +120,10 @@ export default function Dashboard() {
           <select 
             value={filterYear}
             onChange={(e) => setFilterYear(e.target.value)}
-            className="bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none"
+            className="bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none font-medium"
           >
-            {[2024, 2025, 2026].map(year => (
-              <option key={year} value={year}>ปี ค.ศ. {year}</option>
+            {[2024, 2025, 2026, 2027].map(year => (
+              <option key={year} value={year}>ปี พ.ศ. {year + 543}</option>
             ))}
           </select>
           <button 
@@ -191,7 +193,7 @@ export default function Dashboard() {
 
         {/* Monthly Trend Line Chart */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 lg:col-span-2">
-          <h3 className="text-lg font-bold text-slate-800 mb-4">กราฟแนวโน้มอุบัติการณ์รายเดือน (ปี {filterYear})</h3>
+          <h3 className="text-lg font-bold text-slate-800 mb-4">กราฟแนวโน้มอุบัติการณ์รายเดือน (ปี พ.ศ. {Number(filterYear) + 543})</h3>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={monthlyData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
