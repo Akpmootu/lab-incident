@@ -124,9 +124,14 @@ export default function ChartDashboard() {
   const topIncidents = useMemo(() => {
     const counts: Record<string, number> = {};
     filteredData.forEach(d => {
-      d.risk_items?.forEach((item: string) => {
-        counts[item] = (counts[item] || 0) + 1;
-      });
+      if (Array.isArray(d.risk_items)) {
+        d.risk_items.forEach((item: string) => {
+          if (item !== 'อื่นๆ') counts[item] = (counts[item] || 0) + 1;
+        });
+      }
+      if (d.other_risk_item) {
+        counts[d.other_risk_item] = (counts[d.other_risk_item] || 0) + 1;
+      }
     });
     return Object.entries(counts)
       .sort((a, b) => b[1] - a[1])
@@ -150,31 +155,54 @@ export default function ChartDashboard() {
 
   // 3. Miss vs Near Miss vs No Harm
   const groupTypeData = useMemo(() => {
-    const counts = { 'Miss': 0, 'Near Miss': 0, 'No Harm': 0 };
+    const counts: Record<string, number> = { 'Miss': 0, 'Near Miss': 0, 'No Harm': 0 };
     filteredData.forEach(d => {
-      if (d.group_type === 'Miss') counts['Miss']++;
-      else if (d.group_type === 'Near Miss') counts['Near Miss']++;
-      else if (d.group_type === 'No Harm') counts['No Harm']++; // Assuming No Harm might exist or be added
+      const gt = (d.group_type || '').trim();
+      if (gt.toLowerCase() === 'miss') counts['Miss']++;
+      else if (gt.toLowerCase() === 'near miss') counts['Near Miss']++;
+      else if (gt.toLowerCase() === 'no harm') counts['No Harm']++;
+      else if (gt) counts[gt] = (counts[gt] || 0) + 1;
     });
-    return [
-      { name: 'Miss', count: counts['Miss'], fill: '#ef4444' },
-      { name: 'Near Miss', count: counts['Near Miss'], fill: '#f59e0b' },
-      { name: 'No Harm', count: counts['No Harm'], fill: '#10b981' }
-    ].filter(item => item.count > 0);
+    return Object.entries(counts)
+      .map(([name, value]) => ({ 
+        name, 
+        value, 
+        fill: name.toLowerCase() === 'miss' ? '#ef4444' : name.toLowerCase() === 'near miss' ? '#f59e0b' : name.toLowerCase() === 'no harm' ? '#10b981' : '#64748b' 
+      }))
+      .filter(item => item.value > 0);
   }, [filteredData]);
 
   // 4. Top Reporters
   const topReporters = useMemo(() => {
     const counts: Record<string, number> = {};
     filteredData.forEach(d => {
-      if (d.responsible_person) {
-        counts[d.responsible_person] = (counts[d.responsible_person] || 0) + 1;
+      const person = (d.responsible_person || '').trim();
+      if (person) {
+        counts[person] = (counts[person] || 0) + 1;
       }
     });
     return Object.entries(counts)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
-      .map(([name, count]) => ({ name, count }));
+      .map(([name, value]) => ({ name, value }));
+  }, [filteredData]);
+
+  // 5. Risk Items (Pie Chart)
+  const riskItemsData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    filteredData.forEach(d => {
+      if (Array.isArray(d.risk_items)) {
+        d.risk_items.forEach((item: string) => {
+          if (item !== 'อื่นๆ') counts[item] = (counts[item] || 0) + 1;
+        });
+      }
+      if (d.other_risk_item) {
+        counts[d.other_risk_item] = (counts[d.other_risk_item] || 0) + 1;
+      }
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, value]) => ({ name, value }));
   }, [filteredData]);
 
   // KPI Counts
@@ -433,7 +461,7 @@ export default function ChartDashboard() {
               <i className="fa-solid fa-chart-pie"></i>
             </div>
           </div>
-          <div className="h-[250px] w-full relative flex-1">
+          <div className="min-h-[250px] w-full relative flex-1">
             {proportionData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -472,9 +500,9 @@ export default function ChartDashboard() {
         {/* Miss vs Near Miss Chart */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} 
-          className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200"
+          className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col"
         >
-          <div className="mb-6 flex justify-between items-center">
+          <div className="mb-2 flex justify-between items-center">
             <div>
               <h3 className="text-lg font-bold text-slate-800">อัตราส่วนการจัดกลุ่ม</h3>
               <p className="text-xs text-slate-500 mt-1">Miss vs Near Miss</p>
@@ -483,20 +511,67 @@ export default function ChartDashboard() {
               <i className="fa-solid fa-scale-balanced"></i>
             </div>
           </div>
-          <div className="h-[250px] w-full">
+          <div className="min-h-[250px] w-full relative flex-1">
             {groupTypeData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={groupTypeData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
-                  <XAxis type="number" hide />
-                  <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} width={80} />
-                  <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: '#f1f5f9' }} />
-                  <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={30} label={{ position: 'right', fill: '#64748b', fontSize: 12, fontWeight: 'bold' }}>
+                <PieChart>
+                  <Pie
+                    data={groupTypeData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    dataKey="value"
+                    stroke="none"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    labelLine={false}
+                  >
                     {groupTypeData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.fill} />
                     ))}
-                  </Bar>
-                </BarChart>
+                  </Pie>
+                  <RechartsTooltip content={<CustomTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-slate-400">ไม่มีข้อมูล</div>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Risk Items Donut Chart */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }} 
+          className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col lg:col-span-2"
+        >
+          <div className="mb-2 flex justify-between items-center">
+            <div>
+              <h3 className="text-lg font-bold text-slate-800">รายการความเสี่ยง</h3>
+              <p className="text-xs text-slate-500 mt-1">สัดส่วนของรายการความเสี่ยงที่พบ</p>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+              <i className="fa-solid fa-triangle-exclamation"></i>
+            </div>
+          </div>
+          <div className="min-h-[300px] w-full relative flex-1">
+            {riskItemsData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={riskItemsData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    dataKey="value"
+                    stroke="none"
+                    label={({ name, percent }) => percent > 0.05 ? `${name.substring(0, 15)}${name.length > 15 ? '...' : ''} ${(percent * 100).toFixed(0)}%` : ''}
+                    labelLine={true}
+                  >
+                    {riskItemsData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip content={<CustomTooltip />} />
+                </PieChart>
               </ResponsiveContainer>
             ) : (
               <div className="h-full flex items-center justify-center text-slate-400">ไม่มีข้อมูล</div>
@@ -518,7 +593,7 @@ export default function ChartDashboard() {
               <i className="fa-solid fa-medal"></i>
             </div>
           </div>
-          <div className="h-[250px] w-full">
+          <div className="min-h-[250px] w-full">
             {topReporters.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={topReporters} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
@@ -526,7 +601,7 @@ export default function ChartDashboard() {
                   <XAxis type="number" hide />
                   <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} width={80} />
                   <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: '#f1f5f9' }} />
-                  <Bar dataKey="count" fill="#10b981" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fill: '#64748b', fontSize: 12, fontWeight: 'bold' }} />
+                  <Bar dataKey="value" fill="#10b981" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fill: '#64748b', fontSize: 12, fontWeight: 'bold' }} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (

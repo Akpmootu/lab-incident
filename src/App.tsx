@@ -37,11 +37,15 @@ export default function App() {
             >
               <div className="relative w-24 h-24 rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-2xl shadow-blue-500/30">
                 <div className="absolute inset-0 rounded-3xl border-2 border-white/20 animate-ping"></div>
-                <i className="fa-solid fa-microscope text-5xl drop-shadow-lg"></i>
+                <motion.i 
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                  className="fa-solid fa-microscope text-5xl drop-shadow-lg"
+                ></motion.i>
               </div>
               <div className="text-center space-y-2">
-                <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Lab Incident</h1>
-                <p className="text-sm font-medium text-slate-500 tracking-widest uppercase">Management System</p>
+                <h1 className="text-3xl font-bold text-slate-800 tracking-tight">ระบบบันทึกอุบัติการณ์ความเสี่ยง</h1>
+                <p className="text-sm font-medium text-slate-500 tracking-widest uppercase">(Kongrha Lab Incident)</p>
               </div>
               <div className="w-48 h-1.5 bg-slate-200 rounded-full overflow-hidden mt-4">
                 <motion.div
