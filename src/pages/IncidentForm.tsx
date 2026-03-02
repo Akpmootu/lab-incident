@@ -8,16 +8,24 @@ const RISK_TYPES = [
   {
     id: "Clinic",
     label: "Clinic",
+    description: "ความเสี่ยงที่เกี่ยวข้องกับการดูแลรักษาผู้ป่วยโดยตรง",
     icon: "fa-solid fa-stethoscope",
-    color: "text-blue-500",
+    color: "text-blue-600",
     bg: "bg-blue-50",
+    border: "border-blue-200",
+    activeBorder: "border-blue-500",
+    activeBg: "bg-blue-50/50",
   },
   {
     id: "Non-clinic",
     label: "Non-clinic",
+    description: "ความเสี่ยงทั่วไปที่ไม่เกี่ยวกับการรักษาผู้ป่วยโดยตรง",
     icon: "fa-solid fa-building",
-    color: "text-orange-500",
-    bg: "bg-orange-50",
+    color: "text-teal-600",
+    bg: "bg-teal-50",
+    border: "border-teal-200",
+    activeBorder: "border-teal-500",
+    activeBg: "bg-teal-50/50",
   },
 ];
 
@@ -85,6 +93,7 @@ export default function IncidentForm() {
   const [riskItemPopularity, setRiskItemPopularity] = useState<
     Record<string, number>
   >({});
+  const [personCounts, setPersonCounts] = useState<Record<string, number>>({});
 
   const [formData, setFormData] = useState({
     incident_date: new Date().toISOString().split("T")[0],
@@ -108,16 +117,22 @@ export default function IncidentForm() {
     try {
       const { data, error } = await supabase
         .from("incidents")
-        .select("risk_items");
+        .select("risk_items, responsible_person");
       if (error) throw error;
 
       const counts: Record<string, number> = {};
+      const pCounts: Record<string, number> = {};
+      
       data?.forEach((inc) => {
         inc.risk_items?.forEach((item: string) => {
           counts[item] = (counts[item] || 0) + 1;
         });
+        if (inc.responsible_person) {
+          pCounts[inc.responsible_person] = (pCounts[inc.responsible_person] || 0) + 1;
+        }
       });
       setRiskItemPopularity(counts);
+      setPersonCounts(pCounts);
     } catch (err) {
       console.error("Error fetching popularity:", err);
     }
@@ -292,36 +307,43 @@ export default function IncidentForm() {
   };
 
   const renderStepIndicator = () => (
-    <div className="mb-8">
+    <div className="mb-10 px-2 sm:px-8">
       <div className="flex items-center justify-between relative">
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-slate-200 rounded-full z-0"></div>
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1.5 bg-slate-100 rounded-full z-0"></div>
         <div
-          className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-blue-500 rounded-full z-0 transition-all duration-500"
+          className="absolute left-0 top-1/2 -translate-y-1/2 h-1.5 bg-blue-600 rounded-full z-0 transition-all duration-500 ease-out"
           style={{ width: `${((step - 1) / 5) * 100}%` }}
         ></div>
 
-        {[1, 2, 3, 4, 5, 6].map((s) => (
-          <div
-            key={s}
-            className={cn(
-              "relative z-10 w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-colors duration-300 border-2",
-              step >= s
-                ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200"
-                : "bg-white text-slate-400 border-slate-200",
-              step === s && "ring-4 ring-blue-100",
-            )}
-          >
-            {s < step ? <i className="fa-solid fa-check"></i> : s}
+        {[
+          { num: 1, label: "ทั่วไป" },
+          { num: 2, label: "ความเสี่ยง" },
+          { num: 3, label: "รายละเอียด" },
+          { num: 4, label: "ผลกระทบ" },
+          { num: 5, label: "รับผิดชอบ" },
+          { num: 6, label: "สรุป" }
+        ].map((s) => (
+          <div key={s.num} className="relative z-10 flex flex-col items-center gap-2">
+            <div
+              className={cn(
+                "w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 border-[3px]",
+                step > s.num
+                  ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200/50"
+                  : step === s.num
+                  ? "bg-white text-blue-600 border-blue-600 shadow-lg shadow-blue-200 scale-110"
+                  : "bg-white text-slate-300 border-slate-200"
+              )}
+            >
+              {s.num < step ? <i className="fa-solid fa-check"></i> : s.num}
+            </div>
+            <span className={cn(
+              "absolute top-12 text-xs font-medium whitespace-nowrap transition-colors duration-300",
+              step === s.num ? "text-blue-700 font-bold" : step > s.num ? "text-slate-600" : "text-slate-400"
+            )}>
+              {s.label}
+            </span>
           </div>
         ))}
-      </div>
-      <div className="flex justify-between mt-2 text-xs font-medium text-slate-500 px-1">
-        <span className="w-12 text-center">ทั่วไป</span>
-        <span className="w-12 text-center">ความเสี่ยง</span>
-        <span className="w-12 text-center">รายละเอียด</span>
-        <span className="w-12 text-center">ผลกระทบ</span>
-        <span className="w-12 text-center">ผู้รับผิดชอบ</span>
-        <span className="w-12 text-center">สรุป</span>
       </div>
     </div>
   );
@@ -351,31 +373,40 @@ export default function IncidentForm() {
           >
             {/* Step 1: General Info */}
             {step === 1 && (
-              <div className="space-y-6">
-                <div
-                  className={cn(
-                    "floating-label-group bg-slate-50 rounded-xl border",
-                    errors.incident_date
-                      ? "border-red-300 shake"
-                      : "border-slate-200",
+              <div className="space-y-8">
+                <div className="space-y-2">
+                  <label className="block text-sm font-bold text-slate-700">
+                    วันที่เกิดอุบัติการณ์ <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-blue-600">
+                      <i className="fa-regular fa-calendar-days text-lg"></i>
+                    </div>
+                    <input
+                      type="date"
+                      id="incident_date"
+                      value={formData.incident_date}
+                      onChange={(e) =>
+                        handleInputChange("incident_date", e.target.value)
+                      }
+                      className={cn(
+                        "w-full pl-12 pr-4 py-3.5 bg-slate-50 border rounded-xl outline-none transition-all text-slate-800 font-medium focus:bg-white focus:ring-4 focus:ring-blue-500/10",
+                        errors.incident_date
+                          ? "border-red-400 focus:border-red-500 shake"
+                          : "border-slate-200 focus:border-blue-500"
+                      )}
+                    />
+                  </div>
+                  {errors.incident_date && (
+                    <p className="text-red-500 text-xs font-medium flex items-center gap-1 mt-1">
+                      <i className="fa-solid fa-circle-exclamation"></i> กรุณาระบุวันที่เกิดอุบัติการณ์
+                    </p>
                   )}
-                >
-                  <input
-                    type="date"
-                    id="incident_date"
-                    value={formData.incident_date}
-                    onChange={(e) =>
-                      handleInputChange("incident_date", e.target.value)
-                    }
-                    className="w-full bg-transparent outline-none text-slate-800"
-                    placeholder=" "
-                  />
-                  <label htmlFor="incident_date">วันที่เกิดอุบัติการณ์</label>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-3">
-                    ประเภทความเสี่ยง
+                <div className="space-y-3">
+                  <label className="block text-sm font-bold text-slate-700">
+                    ประเภทความเสี่ยง <span className="text-red-500">*</span>
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {RISK_TYPES.map((type) => (
@@ -387,35 +418,50 @@ export default function IncidentForm() {
                             handleInputChange("process_type", "");
                         }}
                         className={cn(
-                          "flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-200 text-left",
+                          "relative flex flex-col gap-3 p-5 rounded-2xl border-2 transition-all duration-200 text-left group overflow-hidden",
                           formData.risk_type === type.id
-                            ? "border-blue-500 bg-blue-50/50 shadow-md shadow-blue-100"
+                            ? `${type.activeBorder} ${type.activeBg} shadow-md`
                             : cn(
                                 "border-slate-200 hover:border-slate-300 hover:bg-slate-50",
                                 errors.risk_type && "border-red-300 shake",
                               ),
                         )}
                       >
-                        <div
-                          className={cn(
-                            "w-12 h-12 rounded-full flex items-center justify-center text-xl",
-                            type.bg,
-                            type.color,
-                          )}
-                        >
-                          <i className={type.icon}></i>
+                        <div className="flex items-center justify-between w-full">
+                          <div
+                            className={cn(
+                              "w-12 h-12 rounded-xl flex items-center justify-center text-xl shadow-sm transition-transform group-hover:scale-110",
+                              type.bg,
+                              type.color,
+                            )}
+                          >
+                            <i className={type.icon}></i>
+                          </div>
+                          <div className={cn(
+                            "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors",
+                            formData.risk_type === type.id ? type.activeBorder : "border-slate-300"
+                          )}>
+                            {formData.risk_type === type.id && (
+                              <div className={cn("w-3 h-3 rounded-full", type.bg.replace('50/50', '500').replace('50', '500'))}></div>
+                            )}
+                          </div>
                         </div>
                         <div>
-                          <div className="font-semibold text-slate-800">
+                          <div className="font-bold text-slate-800 text-lg mb-1">
                             {type.label}
                           </div>
-                          <div className="text-xs text-slate-500">
-                            คลิกเพื่อเลือกประเภท
+                          <div className="text-sm text-slate-500 leading-relaxed">
+                            {type.description}
                           </div>
                         </div>
                       </button>
                     ))}
                   </div>
+                  {errors.risk_type && (
+                    <p className="text-red-500 text-xs font-medium flex items-center gap-1">
+                      <i className="fa-solid fa-circle-exclamation"></i> กรุณาเลือกประเภทความเสี่ยง
+                    </p>
+                  )}
                 </div>
 
                 {formData.risk_type === "Clinic" && (
@@ -552,48 +598,60 @@ export default function IncidentForm() {
             {/* Step 3: Details */}
             {step === 3 && (
               <div className="space-y-6">
-                <div
-                  className={cn(
-                    "floating-label-group bg-slate-50 rounded-xl border",
-                    errors.incident_details
-                      ? "border-red-300 shake"
-                      : "border-slate-200",
-                  )}
-                >
-                  <textarea
-                    id="incident_details"
-                    rows={4}
-                    value={formData.incident_details}
-                    onChange={(e) =>
-                      handleInputChange("incident_details", e.target.value)
-                    }
-                    className="w-full bg-transparent outline-none text-slate-800 resize-none"
-                    placeholder=" "
-                  ></textarea>
-                  <label htmlFor="incident_details">
-                    รายละเอียดอุบัติการณ์
-                  </label>
+                <div className="space-y-1">
+                  <div
+                    className={cn(
+                      "floating-label-group bg-slate-50 rounded-xl border",
+                      errors.incident_details
+                        ? "border-red-300 shake"
+                        : "border-slate-200",
+                    )}
+                  >
+                    <textarea
+                      id="incident_details"
+                      rows={4}
+                      value={formData.incident_details}
+                      onChange={(e) =>
+                        handleInputChange("incident_details", e.target.value)
+                      }
+                      className="w-full bg-transparent outline-none text-slate-800 resize-none"
+                      placeholder=" "
+                    ></textarea>
+                    <label htmlFor="incident_details">
+                      รายละเอียดอุบัติการณ์
+                    </label>
+                  </div>
+                  <p className="text-xs text-slate-500 pl-2">
+                    <i className="fa-solid fa-circle-info mr-1"></i>
+                    อธิบายเหตุการณ์ที่เกิดขึ้นอย่างชัดเจน (ใคร ทำอะไร ที่ไหน อย่างไร)
+                  </p>
                 </div>
 
-                <div
-                  className={cn(
-                    "floating-label-group bg-slate-50 rounded-xl border",
-                    errors.initial_response
-                      ? "border-red-300 shake"
-                      : "border-slate-200",
-                  )}
-                >
-                  <textarea
-                    id="initial_response"
-                    rows={4}
-                    value={formData.initial_response}
-                    onChange={(e) =>
-                      handleInputChange("initial_response", e.target.value)
-                    }
-                    className="w-full bg-transparent outline-none text-slate-800 resize-none"
-                    placeholder=" "
-                  ></textarea>
-                  <label htmlFor="initial_response">การแก้ไขเบื้องต้น</label>
+                <div className="space-y-1">
+                  <div
+                    className={cn(
+                      "floating-label-group bg-slate-50 rounded-xl border",
+                      errors.initial_response
+                        ? "border-red-300 shake"
+                        : "border-slate-200",
+                    )}
+                  >
+                    <textarea
+                      id="initial_response"
+                      rows={4}
+                      value={formData.initial_response}
+                      onChange={(e) =>
+                        handleInputChange("initial_response", e.target.value)
+                      }
+                      className="w-full bg-transparent outline-none text-slate-800 resize-none"
+                      placeholder=" "
+                    ></textarea>
+                    <label htmlFor="initial_response">การแก้ไขเบื้องต้น</label>
+                  </div>
+                  <p className="text-xs text-slate-500 pl-2">
+                    <i className="fa-solid fa-circle-info mr-1"></i>
+                    ระบุการจัดการหรือการแก้ไขปัญหาเฉพาะหน้าทันทีที่เกิดเหตุ
+                  </p>
                 </div>
               </div>
             )}
@@ -602,41 +660,25 @@ export default function IncidentForm() {
             {step === 4 && (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-3">
-                    ระดับผลกระทบ (ความรุนแรง)
+                  <label className="block text-sm font-bold text-slate-700 mb-3">
+                    <i className="fa-solid fa-gauge-high text-blue-500 mr-2"></i>
+                    ระดับผลกระทบ (ความรุนแรง) <span className="text-red-500">*</span>
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {(formData.risk_type === "Clinic"
                       ? IMPACT_LEVELS_CLINIC
                       : IMPACT_LEVELS_NON_CLINIC
-                    ).map((level) => {
-                      // Color coding logic
-                      let colorClass =
-                        "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200";
-                      const isHigh =
-                        formData.risk_type === "Clinic"
-                          ? ["G", "H", "I"].includes(level)
-                          : ["3", "4"].includes(level);
-                      const isMed =
-                        formData.risk_type === "Clinic"
-                          ? ["E", "F"].includes(level)
-                          : ["2"].includes(level);
-                      const isLow =
-                        formData.risk_type === "Clinic"
-                          ? ["A", "B", "C", "D"].includes(level)
-                          : ["0", "1"].includes(level);
+                    ).map((level, index, array) => {
+                      // Gradient Color coding logic
+                      const percentage = index / (array.length - 1);
+                      
+                      // Calculate color from green (120) to red (0)
+                      const hue = (1 - percentage) * 120;
+                      const bgColor = `hsl(${hue}, 80%, 45%)`;
+                      const bgHover = `hsl(${hue}, 80%, 40%)`;
+                      const bgActive = `hsl(${hue}, 80%, 35%)`;
 
-                      if (formData.impact_level === level) {
-                        if (isHigh)
-                          colorClass =
-                            "bg-red-500 text-white border-red-600 shadow-md shadow-red-200";
-                        else if (isMed)
-                          colorClass =
-                            "bg-orange-500 text-white border-orange-600 shadow-md shadow-orange-200";
-                        else
-                          colorClass =
-                            "bg-green-500 text-white border-green-600 shadow-md shadow-green-200";
-                      }
+                      const isSelected = formData.impact_level === level;
 
                       return (
                         <button
@@ -644,9 +686,14 @@ export default function IncidentForm() {
                           onClick={() =>
                             handleInputChange("impact_level", level)
                           }
+                          style={{
+                            backgroundColor: isSelected ? bgActive : bgColor,
+                            borderColor: isSelected ? bgActive : 'transparent',
+                            opacity: isSelected ? 1 : 0.85
+                          }}
                           className={cn(
-                            "w-12 h-12 rounded-xl border-2 font-bold text-lg transition-all flex items-center justify-center",
-                            colorClass,
+                            "w-12 h-12 rounded-xl border-2 font-bold text-lg text-white transition-all flex items-center justify-center hover:opacity-100 hover:scale-105",
+                            isSelected && "shadow-lg scale-110 ring-4 ring-slate-200",
                             errors.impact_level &&
                               !formData.impact_level &&
                               "border-red-300 shake",
@@ -684,25 +731,31 @@ export default function IncidentForm() {
                   </div>
                 </div>
 
-                <div
-                  className={cn(
-                    "floating-label-group bg-slate-50 rounded-xl border",
-                    errors.guideline
-                      ? "border-red-300 shake"
-                      : "border-slate-200",
-                  )}
-                >
-                  <textarea
-                    id="guideline"
-                    rows={4}
-                    value={formData.guideline}
-                    onChange={(e) =>
-                      handleInputChange("guideline", e.target.value)
-                    }
-                    className="w-full bg-transparent outline-none text-slate-800 resize-none"
-                    placeholder=" "
-                  ></textarea>
-                  <label htmlFor="guideline">แนวทางปฏิบัติ</label>
+                <div className="space-y-1">
+                  <div
+                    className={cn(
+                      "floating-label-group bg-slate-50 rounded-xl border",
+                      errors.guideline
+                        ? "border-red-300 shake"
+                        : "border-slate-200",
+                    )}
+                  >
+                    <textarea
+                      id="guideline"
+                      rows={4}
+                      value={formData.guideline}
+                      onChange={(e) =>
+                        handleInputChange("guideline", e.target.value)
+                      }
+                      className="w-full bg-transparent outline-none text-slate-800 resize-none"
+                      placeholder=" "
+                    ></textarea>
+                    <label htmlFor="guideline">แนวทางปฏิบัติ (เพื่อป้องกัน)</label>
+                  </div>
+                  <p className="text-xs text-slate-500 pl-2">
+                    <i className="fa-solid fa-circle-info mr-1"></i>
+                    ระบุแนวทางหรือมาตรการเพื่อป้องกันไม่ให้เกิดเหตุการณ์นี้ซ้ำอีก
+                  </p>
                 </div>
               </div>
             )}
@@ -710,8 +763,9 @@ export default function IncidentForm() {
             {/* Step 5: Responsible Person */}
             {step === 5 && (
               <div className="space-y-6">
-                <label className="block text-sm font-medium text-slate-700 mb-3">
-                  ผู้รับผิดชอบ
+                <label className="block text-sm font-bold text-slate-700 mb-3">
+                  <i className="fa-solid fa-users text-blue-500 mr-2"></i>
+                  ผู้รับผิดชอบ <span className="text-red-500">*</span>
                 </label>
                 <div
                   className={cn(
@@ -726,32 +780,47 @@ export default function IncidentForm() {
                     "วรัญญา เพิ่มเดช",
                     "นลิน ฤทธิ์โต",
                     "อำพล เส็นบัตร",
-                  ].map((person) => (
+                  ].map((person) => {
+                    const count = personCounts[person] || 0;
+                    return (
                     <button
                       key={person}
                       onClick={() =>
                         handleInputChange("responsible_person", person)
                       }
                       className={cn(
-                        "flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-200 text-left",
+                        "flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-200 text-left group",
                         formData.responsible_person === person
-                          ? "border-blue-500 bg-blue-50 text-blue-700 shadow-sm"
-                          : "border-slate-200 text-slate-600 hover:bg-slate-50",
+                          ? "border-blue-500 bg-blue-50 text-blue-800 shadow-md"
+                          : "border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300",
                       )}
                     >
                       <div
                         className={cn(
-                          "w-10 h-10 rounded-full flex items-center justify-center text-lg",
+                          "w-12 h-12 rounded-xl flex items-center justify-center text-xl shadow-sm transition-transform group-hover:scale-110",
                           formData.responsible_person === person
-                            ? "bg-blue-200 text-blue-800"
-                            : "bg-slate-100 text-slate-500",
+                            ? "bg-blue-600 text-white"
+                            : "bg-white text-slate-400 border border-slate-200",
                         )}
                       >
-                        <i className="fa-solid fa-user"></i>
+                        <i className="fa-solid fa-user-doctor"></i>
                       </div>
-                      <span className="font-medium">{person}</span>
+                      <div className="flex-1">
+                        <span className="font-bold block text-lg">{person}</span>
+                        <span className="text-xs font-medium text-slate-500 flex items-center gap-1 mt-0.5">
+                          <i className="fa-solid fa-chart-simple text-blue-400"></i> บันทึกแล้ว {count} ครั้ง
+                        </span>
+                      </div>
+                      <div className={cn(
+                        "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors",
+                        formData.responsible_person === person ? "border-blue-500" : "border-slate-300"
+                      )}>
+                        {formData.responsible_person === person && (
+                          <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                        )}
+                      </div>
                     </button>
-                  ))}
+                  )})}
                 </div>
               </div>
             )}
@@ -759,85 +828,122 @@ export default function IncidentForm() {
             {/* Step 6: Summary */}
             {step === 6 && (
               <div className="space-y-6">
-                <div className="bg-slate-50 rounded-xl p-6 border border-slate-200 space-y-4">
-                  <h3 className="text-lg font-bold text-slate-800 border-b pb-2 mb-4">
-                    สรุปข้อมูลก่อนบันทึก
-                  </h3>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-slate-500">วันที่เกิดอุบัติการณ์</p>
-                      <p className="font-medium text-slate-800">
-                        {new Date(formData.incident_date).toLocaleDateString(
-                          "th-TH",
-                          { year: "numeric", month: "long", day: "numeric" },
-                        )}
-                      </p>
+                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
+                  <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+                      <i className="fa-solid fa-clipboard-check"></i>
                     </div>
                     <div>
-                      <p className="text-slate-500">ประเภทความเสี่ยง</p>
-                      <p className="font-medium text-slate-800">
-                        {formData.risk_type}{" "}
-                        {formData.process_type && `- ${formData.process_type}`}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-slate-500">ระดับผลกระทบ</p>
-                      <p className="font-medium text-slate-800">
-                        ระดับ {formData.impact_level}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-slate-500">การจัดกลุ่ม</p>
-                      <p className="font-medium text-slate-800">
-                        {formData.group_type}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-slate-500">ผู้รับผิดชอบ</p>
-                      <p className="font-medium text-slate-800">
-                        {formData.responsible_person}
-                      </p>
+                      <h3 className="text-xl font-bold text-slate-800">สรุปข้อมูลก่อนบันทึก</h3>
+                      <p className="text-xs text-slate-500">กรุณาตรวจสอบความถูกต้องก่อนยืนยัน</p>
                     </div>
                   </div>
 
-                  <div>
-                    <p className="text-slate-500 text-sm mb-1">
-                      รายการความเสี่ยง
-                    </p>
-                    <ul className="list-disc list-inside text-sm font-medium text-slate-800 space-y-1">
-                      {formData.risk_items.map((item, i) => (
-                        <li key={i}>{item}</li>
-                      ))}
-                      {formData.other_risk_item && (
-                        <li>อื่นๆ: {formData.other_risk_item}</li>
-                      )}
-                    </ul>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* General Info Card */}
+                    <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-4">
+                      <h4 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                        <i className="fa-regular fa-calendar text-blue-500"></i> ข้อมูลทั่วไป
+                      </h4>
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center border-b border-slate-200/60 pb-2">
+                          <span className="text-sm text-slate-500">วันที่เกิดเหตุ</span>
+                          <span className="text-sm font-bold text-slate-800">
+                            {new Date(formData.incident_date).toLocaleDateString("th-TH", { year: "numeric", month: "long", day: "numeric" })}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center border-b border-slate-200/60 pb-2">
+                          <span className="text-sm text-slate-500">ประเภทความเสี่ยง</span>
+                          <span className="text-sm font-bold text-slate-800">
+                            {formData.risk_type} {formData.process_type && <span className="text-blue-600">({formData.process_type})</span>}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center border-b border-slate-200/60 pb-2">
+                          <span className="text-sm text-slate-500">ผู้รับผิดชอบ</span>
+                          <span className="text-sm font-bold text-slate-800">
+                            <i className="fa-solid fa-user-doctor text-slate-400 mr-1"></i> {formData.responsible_person || "-"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Impact Card */}
+                    <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-4">
+                      <h4 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                        <i className="fa-solid fa-bolt text-orange-500"></i> ผลกระทบและการจัดกลุ่ม
+                      </h4>
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center border-b border-slate-200/60 pb-2">
+                          <span className="text-sm text-slate-500">ระดับผลกระทบ</span>
+                          <span className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                            {(() => {
+                              const array = formData.risk_type === "Clinic" ? IMPACT_LEVELS_CLINIC : IMPACT_LEVELS_NON_CLINIC;
+                              const index = array.indexOf(formData.impact_level);
+                              const percentage = Math.max(0, index / (array.length - 1 || 1));
+                              const hue = (1 - percentage) * 120;
+                              return (
+                                <span 
+                                  className="px-3 py-1 rounded-lg text-white font-bold shadow-sm"
+                                  style={{ backgroundColor: `hsl(${hue}, 80%, 45%)` }}
+                                >
+                                  ระดับ {formData.impact_level || "-"}
+                                </span>
+                              );
+                            })()}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center border-b border-slate-200/60 pb-2">
+                          <span className="text-sm text-slate-500">การจัดกลุ่ม</span>
+                          <span className={cn(
+                            "text-sm font-bold px-3 py-1 rounded-lg",
+                            formData.group_type === "Miss" ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"
+                          )}>
+                            {formData.group_type || "-"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  <div>
-                    <p className="text-slate-500 text-sm mb-1">
-                      รายละเอียดอุบัติการณ์
-                    </p>
-                    <p className="text-sm font-medium text-slate-800 bg-white p-3 rounded-lg border border-slate-100">
-                      {formData.incident_details}
-                    </p>
-                  </div>
+                  {/* Details Section */}
+                  <div className="space-y-4 pt-2">
+                    <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                      <h4 className="text-sm font-bold text-blue-800 mb-2 flex items-center gap-2">
+                        <i className="fa-solid fa-triangle-exclamation text-blue-500"></i> รายการความเสี่ยง
+                      </h4>
+                      <ul className="list-disc list-inside text-sm font-medium text-slate-700 space-y-1 ml-1">
+                        {formData.risk_items.map((item, i) => <li key={i}>{item}</li>)}
+                        {formData.other_risk_item && <li>อื่นๆ: {formData.other_risk_item}</li>}
+                        {formData.risk_items.length === 0 && !formData.other_risk_item && <li className="text-slate-400 italic list-none">ไม่ได้ระบุ</li>}
+                      </ul>
+                    </div>
 
-                  <div>
-                    <p className="text-slate-500 text-sm mb-1">
-                      การแก้ไขเบื้องต้น
-                    </p>
-                    <p className="text-sm font-medium text-slate-800 bg-white p-3 rounded-lg border border-slate-100">
-                      {formData.initial_response}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-slate-500 text-sm mb-1">แนวทางปฏิบัติ</p>
-                    <p className="text-sm font-medium text-slate-800 bg-white p-3 rounded-lg border border-slate-100">
-                      {formData.guideline}
-                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                          <i className="fa-solid fa-align-left text-slate-400"></i> รายละเอียด
+                        </h4>
+                        <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                          {formData.incident_details || "-"}
+                        </p>
+                      </div>
+                      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                          <i className="fa-solid fa-wrench text-orange-400"></i> การแก้ไขเบื้องต้น
+                        </h4>
+                        <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                          {formData.initial_response || "-"}
+                        </p>
+                      </div>
+                      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                          <i className="fa-solid fa-shield-halved text-emerald-400"></i> แนวทางปฏิบัติ
+                        </h4>
+                        <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                          {formData.guideline || "-"}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -845,15 +951,13 @@ export default function IncidentForm() {
           </motion.div>
         </AnimatePresence>
 
-        <div className="mt-8 flex justify-between items-center pt-6 border-t border-slate-100">
+        <div className="mt-12 flex justify-between items-center pt-6 border-t border-slate-100">
           <button
             onClick={prevStep}
             disabled={step === 1 || isSubmitting}
             className={cn(
-              "px-6 py-2.5 rounded-xl font-medium transition-all flex items-center gap-2",
-              step === 1
-                ? "opacity-0 pointer-events-none"
-                : "text-slate-600 hover:bg-slate-100",
+              "px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-3 border-2 border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 focus:ring-4 focus:ring-slate-100",
+              step === 1 && "opacity-0 pointer-events-none"
             )}
             aria-label="ย้อนกลับ"
           >
@@ -864,7 +968,7 @@ export default function IncidentForm() {
           {step < 6 ? (
             <button
               onClick={nextStep}
-              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all shadow-md shadow-blue-200 flex items-center gap-2"
+              className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-200 flex items-center gap-3 hover:scale-105 focus:ring-4 focus:ring-blue-500/20"
               aria-label="ถัดไป"
             >
               ถัดไป{" "}
@@ -874,7 +978,7 @@ export default function IncidentForm() {
             <button
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="px-8 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-all shadow-md shadow-green-200 flex items-center gap-2 disabled:opacity-70"
+              className="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-emerald-200 flex items-center gap-3 hover:scale-105 focus:ring-4 focus:ring-emerald-500/20 disabled:opacity-70 disabled:hover:scale-100"
               aria-label="ยืนยันการบันทึก"
             >
               {isSubmitting ? (

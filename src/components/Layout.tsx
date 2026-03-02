@@ -9,8 +9,10 @@ export default function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
 
   const navItems = [
-    { path: '/', icon: 'fa-solid fa-pen-to-square', label: 'บันทึกอุบัติการณ์' },
-    { path: '/dashboard', icon: 'fa-solid fa-chart-pie', label: 'สรุปข้อมูล (Dashboard)' },
+    { path: '/', icon: 'fa-solid fa-house', label: 'หน้าแรก' },
+    { path: '/report', icon: 'fa-solid fa-pen-to-square', label: 'บันทึกอุบัติการณ์' },
+    { path: '/dashboard', icon: 'fa-solid fa-table', label: 'สรุปข้อมูล (ตาราง)' },
+    { path: '/charts', icon: 'fa-solid fa-chart-pie', label: 'สรุปข้อมูล (กราฟ)' },
     { path: '/data', icon: 'fa-solid fa-table-list', label: 'ตารางข้อมูล' },
   ];
 
@@ -31,10 +33,10 @@ export default function Layout({ children }: { children: ReactNode }) {
                 exit={{ opacity: 0, width: 0 }}
                 className="flex items-center gap-2 overflow-hidden whitespace-nowrap"
               >
-                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold">
-                  <i className="fa-solid fa-hospital"></i>
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-md shadow-blue-200">
+                  <i className="fa-solid fa-microscope"></i>
                 </div>
-                <span className="font-semibold text-slate-800">รพ.กงหรา</span>
+                <span className="font-bold text-slate-800 tracking-tight">Lab Incident</span>
               </motion.div>
             )}
           </AnimatePresence>
@@ -121,9 +123,11 @@ export default function Layout({ children }: { children: ReactNode }) {
             >
               <i className="fa-solid fa-bars"></i>
             </button>
-            <div className="font-semibold text-slate-800 flex items-center gap-2">
-              <i className="fa-solid fa-hospital text-blue-600"></i>
-              รพ.กงหรา
+            <div className="font-bold text-slate-800 flex items-center gap-2 tracking-tight">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
+                <i className="fa-solid fa-microscope"></i>
+              </div>
+              Lab Incident
             </div>
           </div>
           
@@ -134,7 +138,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             </div>
             <div className="h-4 w-px bg-slate-300"></div>
             <Link 
-              to="/"
+              to="/report"
               className="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
             >
               <i className="fa-solid fa-plus"></i>
@@ -170,10 +174,10 @@ export default function Layout({ children }: { children: ReactNode }) {
               >
                 <div className="h-16 flex items-center justify-between px-4 border-b border-slate-100">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold">
-                      <i className="fa-solid fa-hospital"></i>
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-md">
+                      <i className="fa-solid fa-microscope"></i>
                     </div>
-                    <span className="font-semibold text-slate-800">รพ.กงหรา</span>
+                    <span className="font-bold text-slate-800 tracking-tight">Lab Incident</span>
                   </div>
                   <button
                     onClick={() => setIsMobileMenuOpen(false)}
@@ -217,14 +221,24 @@ export default function Layout({ children }: { children: ReactNode }) {
         </main>
 
         {/* Footer */}
-        <footer className="bg-white border-t border-slate-200 py-4 px-6 flex flex-col sm:flex-row items-center justify-between text-sm text-slate-500 z-10">
-          <div className="flex items-center gap-2">
-            <i className="fa-solid fa-shield-halved text-blue-500"></i>
-            <span>ระบบบริหารความเสี่ยง (Risk Management)</span>
+        <footer className="bg-slate-50 border-t border-slate-200 py-6 px-6 flex flex-col md:flex-row items-center justify-between text-sm text-slate-500 z-10 gap-4">
+          <div className="flex flex-col items-center md:items-start gap-1">
+            <div className="flex items-center gap-2 font-medium text-slate-700">
+              <i className="fa-solid fa-shield-halved text-blue-500"></i>
+              <span>ระบบบริหารความเสี่ยง (Risk Management)</span>
+            </div>
+            <span className="text-xs">กลุ่มงานเทคนิคการแพทย์ โรงพยาบาลกงหรา</span>
           </div>
-          <div className="flex items-center gap-2 mt-2 sm:mt-0 font-medium">
-            <i className="fa-solid fa-code text-slate-400"></i>
-            <span>อรรฆพร ศรีปานรอด นวก.คอม</span>
+          
+          <div className="flex flex-col items-center md:items-end gap-1">
+            <div className="flex items-center gap-2 font-medium">
+              <i className="fa-solid fa-code text-slate-400"></i>
+              <span>พัฒนาโดย อรรฆพร ศรีปานรอด นวก.คอม</span>
+            </div>
+            <a href="https://www.facebook.com/Mootu00" className="text-xs text-blue-500 hover:underline flex items-center gap-1">
+              <i className="fa-solid fa-headset"></i>
+              ติดต่อผู้ดูแลระบบ (IT Support)
+            </a>
           </div>
         </footer>
       </div>

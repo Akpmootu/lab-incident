@@ -28,6 +28,7 @@ export default function DataTable() {
   const [filterYear, setFilterYear] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterImpact, setFilterImpact] = useState<string>('all');
+  const [filterPerson, setFilterPerson] = useState<string>('all');
 
   // Edit State
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -66,6 +67,11 @@ export default function DataTable() {
     return Array.from(uniqueYears).sort((a, b) => Number(b) - Number(a));
   }, [incidents]);
 
+  const persons = useMemo(() => {
+    const uniquePersons = new Set(incidents.map(inc => inc.responsible_person).filter(Boolean));
+    return Array.from(uniquePersons).sort();
+  }, [incidents]);
+
   const filteredData = useMemo(() => {
     return incidents.filter(inc => {
       const matchSearch = 
@@ -76,10 +82,11 @@ export default function DataTable() {
       const matchYear = filterYear === 'all' || dayjs(inc.incident_date).format('YYYY') === filterYear;
       const matchType = filterType === 'all' || inc.risk_type === filterType;
       const matchImpact = filterImpact === 'all' || inc.impact_level === filterImpact;
+      const matchPerson = filterPerson === 'all' || inc.responsible_person === filterPerson;
 
-      return matchSearch && matchYear && matchType && matchImpact;
+      return matchSearch && matchYear && matchType && matchImpact && matchPerson;
     });
-  }, [incidents, searchTerm, filterYear, filterType, filterImpact]);
+  }, [incidents, searchTerm, filterYear, filterType, filterImpact, filterPerson]);
 
   const handleViewDetails = (incident: Incident) => {
     const detailsHtml = `
@@ -269,7 +276,7 @@ export default function DataTable() {
 
         <div className="p-6">
           {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
             <div className="relative">
               <i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
               <input
@@ -315,6 +322,17 @@ export default function DataTable() {
                 {['0', '1', '2', '3', '4'].map(l => <option key={l} value={l}>ระดับ {l}</option>)}
               </optgroup>
             </select>
+
+            <select
+              value={filterPerson}
+              onChange={(e) => setFilterPerson(e.target.value)}
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm appearance-none"
+            >
+              <option value="all">ทุกคน (ผู้รับผิดชอบ)</option>
+              {persons.map(person => (
+                <option key={person} value={person as string}>{person}</option>
+              ))}
+            </select>
           </div>
 
           {/* Table */}
@@ -351,7 +369,7 @@ export default function DataTable() {
                       {editingId === incident.id ? (
                         // Edit Mode Row
                         <td colSpan={6} className="p-4 bg-blue-50/50">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                             <div>
                               <label className="block text-xs font-medium text-slate-500 mb-1">วันที่</label>
                               <input 
@@ -362,6 +380,57 @@ export default function DataTable() {
                               />
                             </div>
                             <div>
+                              <label className="block text-xs font-medium text-slate-500 mb-1">ประเภทความเสี่ยง</label>
+                              <select 
+                                value={editData.risk_type || ''} 
+                                onChange={e => setEditData({...editData, risk_type: e.target.value})}
+                                className="w-full p-2 border rounded-lg text-sm"
+                              >
+                                <option value="Clinic">Clinic</option>
+                                <option value="Non-clinic">Non-clinic</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-slate-500 mb-1">ขั้นตอน (เฉพาะ Clinic)</label>
+                              <select 
+                                value={editData.process_type || ''} 
+                                onChange={e => setEditData({...editData, process_type: e.target.value})}
+                                className="w-full p-2 border rounded-lg text-sm"
+                                disabled={editData.risk_type !== 'Clinic'}
+                              >
+                                <option value="">-</option>
+                                <option value="Pre-analytical">Pre-analytical</option>
+                                <option value="Analytical">Analytical</option>
+                                <option value="Post-analytical">Post-analytical</option>
+                              </select>
+                            </div>
+                            
+                            <div>
+                              <label className="block text-xs font-medium text-slate-500 mb-1">ระดับผลกระทบ</label>
+                              <select 
+                                value={editData.impact_level || ''} 
+                                onChange={e => setEditData({...editData, impact_level: e.target.value})}
+                                className="w-full p-2 border rounded-lg text-sm"
+                              >
+                                {editData.risk_type === 'Clinic' ? (
+                                  ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'].map(l => <option key={l} value={l}>{l}</option>)
+                                ) : (
+                                  ['0', '1', '2', '3', '4'].map(l => <option key={l} value={l}>{l}</option>)
+                                )}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-slate-500 mb-1">การจัดกลุ่ม</label>
+                              <select 
+                                value={editData.group_type || ''} 
+                                onChange={e => setEditData({...editData, group_type: e.target.value})}
+                                className="w-full p-2 border rounded-lg text-sm"
+                              >
+                                <option value="Miss">Miss</option>
+                                <option value="Near Miss">Near Miss</option>
+                              </select>
+                            </div>
+                            <div>
                               <label className="block text-xs font-medium text-slate-500 mb-1">ผู้รับผิดชอบ</label>
                               <input 
                                 type="text" 
@@ -370,7 +439,27 @@ export default function DataTable() {
                                 className="w-full p-2 border rounded-lg text-sm"
                               />
                             </div>
-                            <div className="md:col-span-2">
+
+                            <div className="md:col-span-3">
+                              <label className="block text-xs font-medium text-slate-500 mb-1">รายการความเสี่ยง (คั่นด้วยลูกน้ำ)</label>
+                              <input 
+                                type="text" 
+                                value={editData.risk_items?.join(', ') || ''} 
+                                onChange={e => setEditData({...editData, risk_items: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})}
+                                className="w-full p-2 border rounded-lg text-sm"
+                              />
+                            </div>
+                            <div className="md:col-span-3">
+                              <label className="block text-xs font-medium text-slate-500 mb-1">รายการอื่นๆ</label>
+                              <input 
+                                type="text" 
+                                value={editData.other_risk_item || ''} 
+                                onChange={e => setEditData({...editData, other_risk_item: e.target.value})}
+                                className="w-full p-2 border rounded-lg text-sm"
+                              />
+                            </div>
+
+                            <div className="md:col-span-3">
                               <label className="block text-xs font-medium text-slate-500 mb-1">รายละเอียด</label>
                               <textarea 
                                 value={editData.incident_details || ''} 
@@ -379,11 +468,20 @@ export default function DataTable() {
                                 rows={2}
                               />
                             </div>
-                            <div className="md:col-span-2">
+                            <div className="md:col-span-3">
                               <label className="block text-xs font-medium text-slate-500 mb-1">การแก้ไขเบื้องต้น</label>
                               <textarea 
                                 value={editData.initial_response || ''} 
                                 onChange={e => setEditData({...editData, initial_response: e.target.value})}
+                                className="w-full p-2 border rounded-lg text-sm"
+                                rows={2}
+                              />
+                            </div>
+                            <div className="md:col-span-3">
+                              <label className="block text-xs font-medium text-slate-500 mb-1">แนวทางปฏิบัติ</label>
+                              <textarea 
+                                value={editData.guideline || ''} 
+                                onChange={e => setEditData({...editData, guideline: e.target.value})}
                                 className="w-full p-2 border rounded-lg text-sm"
                                 rows={2}
                               />
@@ -424,14 +522,22 @@ export default function DataTable() {
                             {incident.risk_items?.join(', ') || incident.other_risk_item || '-'}
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <span className={cn(
-                              "px-2.5 py-1 rounded-full text-xs font-bold",
-                              ['G','H','I','3','4'].includes(incident.impact_level) ? "bg-red-100 text-red-800" :
-                              ['E','F','2'].includes(incident.impact_level) ? "bg-orange-100 text-orange-800" :
-                              "bg-green-100 text-green-800"
-                            )}>
-                              {incident.impact_level}
-                            </span>
+                            {(() => {
+                              const array = incident.risk_type === "Clinic" 
+                                ? ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'] 
+                                : ['0', '1', '2', '3', '4'];
+                              const index = array.indexOf(incident.impact_level);
+                              const percentage = Math.max(0, index / (array.length - 1 || 1));
+                              const hue = (1 - percentage) * 120;
+                              return (
+                                <span 
+                                  className="px-3 py-1 rounded-lg text-white font-bold shadow-sm text-xs"
+                                  style={{ backgroundColor: `hsl(${hue}, 80%, 45%)` }}
+                                >
+                                  {incident.impact_level}
+                                </span>
+                              );
+                            })()}
                           </td>
                           <td className="px-4 py-3">
                             {incident.responsible_person || '-'}
