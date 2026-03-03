@@ -187,6 +187,21 @@ export default function ChartDashboard() {
       .map(([name, value]) => ({ name, value }));
   }, [filteredData]);
 
+  // 4.5 Top Causing Departments
+  const topDepartments = useMemo(() => {
+    const counts: Record<string, number> = {};
+    filteredData.forEach(d => {
+      const dept = (d.causing_department || '').trim();
+      if (dept) {
+        counts[dept] = (counts[dept] || 0) + 1;
+      }
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name, value]) => ({ name, value }));
+  }, [filteredData]);
+
   // 5. Risk Items (Pie Chart)
   const riskItemsData = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -602,6 +617,37 @@ export default function ChartDashboard() {
                   <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} width={80} />
                   <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: '#f1f5f9' }} />
                   <Bar dataKey="value" fill="#10b981" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fill: '#64748b', fontSize: 12, fontWeight: 'bold' }} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-slate-400">ไม่มีข้อมูล</div>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Top Causing Departments Chart */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }} 
+          className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200"
+        >
+          <div className="mb-6 flex justify-between items-center">
+            <div>
+              <h3 className="text-lg font-bold text-slate-800">Top 5 หน่วยงาน</h3>
+              <p className="text-xs text-slate-500 mt-1">ที่ทำให้เกิดอุบัติการณ์</p>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <i className="fa-solid fa-building-circle-exclamation"></i>
+            </div>
+          </div>
+          <div className="min-h-[250px] w-full">
+            {topDepartments.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={topDepartments} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
+                  <XAxis type="number" hide />
+                  <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} width={80} />
+                  <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: '#f1f5f9' }} />
+                  <Bar dataKey="value" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fill: '#64748b', fontSize: 12, fontWeight: 'bold' }} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (

@@ -58,6 +58,8 @@ const RISK_ITEMS = {
     "เครื่องตรวจวิเคราะห์ขัดข้อง(เกิน 24 ชม.)",
     "QC ไม่ผ่านเกณฑ์ที่กำหนด ไม่สามารถแก้ไขได้",
     "ระบบ HIS,LIS ขัดข้อง มีปัญหา ไม่สามารถใช้งานได้ (เกิน 24 ชม.)",
+    "การให้เลือดผิดหมู่",
+    "การเกิดปฏิกิริยาหลังการให้เลือด/แพ้เลือด/มีอาการข้างเคียงหลังการให้เลือด",
   ],
   "Post-analytical": [
     "รายงานผลการตรวจวิเคราะห์ผิดพลาด(near miss)",
@@ -94,6 +96,7 @@ export default function IncidentForm() {
     Record<string, number>
   >({});
   const [personCounts, setPersonCounts] = useState<Record<string, number>>({});
+  const [deptCounts, setDeptCounts] = useState<Record<string, number>>({});
 
   const [formData, setFormData] = useState({
     incident_date: new Date().toISOString().split("T")[0],
@@ -107,6 +110,7 @@ export default function IncidentForm() {
     group_type: "",
     guideline: "",
     responsible_person: "",
+    causing_department: "",
   });
 
   useEffect(() => {
@@ -117,11 +121,12 @@ export default function IncidentForm() {
     try {
       const { data, error } = await supabase
         .from("incidents")
-        .select("risk_items, responsible_person");
+        .select("risk_items, responsible_person, causing_department");
       if (error) throw error;
 
       const counts: Record<string, number> = {};
       const pCounts: Record<string, number> = {};
+      const dCounts: Record<string, number> = {};
       
       data?.forEach((inc) => {
         inc.risk_items?.forEach((item: string) => {
@@ -130,9 +135,13 @@ export default function IncidentForm() {
         if (inc.responsible_person) {
           pCounts[inc.responsible_person] = (pCounts[inc.responsible_person] || 0) + 1;
         }
+        if (inc.causing_department) {
+          dCounts[inc.causing_department] = (dCounts[inc.causing_department] || 0) + 1;
+        }
       });
       setRiskItemPopularity(counts);
       setPersonCounts(pCounts);
+      setDeptCounts(dCounts);
     } catch (err) {
       console.error("Error fetching popularity:", err);
     }
@@ -180,6 +189,7 @@ export default function IncidentForm() {
       if (!formData.guideline) newErrors.guideline = true;
     } else if (step === 5) {
       if (!formData.responsible_person) newErrors.responsible_person = true;
+      if (!formData.causing_department) newErrors.causing_department = true;
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -225,6 +235,7 @@ export default function IncidentForm() {
           group_type: formData.group_type,
           guideline: formData.guideline,
           responsible_person: formData.responsible_person,
+          causing_department: formData.causing_department,
         },
       ]);
 
@@ -236,6 +247,7 @@ export default function IncidentForm() {
 📅 <b>วันที่:</b> ${new Date(formData.incident_date).toLocaleDateString("th-TH", { year: "numeric", month: "long", day: "numeric" })}
 🏥 <b>ประเภท:</b> ${formData.risk_type} ${formData.process_type ? `(${formData.process_type})` : ""}
 ⚠️ <b>ความรุนแรง:</b> ระดับ ${formData.impact_level} (${formData.group_type})
+🏢 <b>หน่วยงานที่เกิดเหตุ:</b> ${formData.causing_department}
 👤 <b>ผู้รับผิดชอบ:</b> ${formData.responsible_person}
 📝 <b>รายละเอียด:</b> ${formData.incident_details.substring(0, 100)}${formData.incident_details.length > 100 ? "..." : ""}
       `;
@@ -267,6 +279,7 @@ export default function IncidentForm() {
         group_type: "",
         guideline: "",
         responsible_person: "",
+        causing_department: "",
       });
       setStep(1);
       setRiskItemSearch("");
@@ -760,20 +773,61 @@ export default function IncidentForm() {
               </div>
             )}
 
-            {/* Step 5: Responsible Person */}
+            {/* Step 5: Responsible Person & Department */}
             {step === 5 && (
-              <div className="space-y-6">
-                <label className="block text-sm font-bold text-slate-700 mb-3">
-                  <i className="fa-solid fa-users text-blue-500 mr-2"></i>
-                  ผู้รับผิดชอบ <span className="text-red-500">*</span>
-                </label>
-                <div
-                  className={cn(
-                    "grid grid-cols-1 sm:grid-cols-2 gap-4",
-                    errors.responsible_person &&
-                      "p-2 border border-red-300 rounded-xl shake",
+              <div className="space-y-8">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-3">
+                    <i className="fa-solid fa-building text-blue-500 mr-2"></i>
+                    หน่วยงานที่ทำให้เกิดอุบัติการณ์ <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={formData.causing_department}
+                      onChange={(e) => handleInputChange("causing_department", e.target.value)}
+                      className={cn(
+                        "w-full pl-4 pr-10 py-3.5 bg-slate-50 border rounded-xl outline-none transition-all text-slate-800 font-medium appearance-none focus:bg-white focus:ring-4 focus:ring-blue-500/10",
+                        errors.causing_department ? "border-red-400 focus:border-red-500 shake" : "border-slate-200 focus:border-blue-500"
+                      )}
+                    >
+                      <option value="" disabled>-- เลือกหน่วยงาน --</option>
+                      {[
+                        "ER", "OPD", "IPD", "LR", "PCU", "NCD", "ANC", "ARV", 
+                        "IT/งานประกัน", "LAB", "X-Ray", "จ่ายกลาง", "IC", "บริหาร", 
+                        "แพทย์แผนไทย", "แพทย์", "ห้องบัตร", "ห้องฟัน", "ห้องยา", 
+                        "ห้องยา NCD", "เวชปฏิบัติ", "สุขภาพจิต", "กายภาพ", 
+                        "กลุ่มการพยาบาล", "การเงิน", "คลังยา", "ENV"
+                      ]
+                        .sort((a, b) => (deptCounts[b] || 0) - (deptCounts[a] || 0))
+                        .map((dept) => (
+                          <option key={dept} value={dept}>
+                            {dept} {deptCounts[dept] ? `(${deptCounts[dept]} ครั้ง)` : ""}
+                          </option>
+                        ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-400">
+                      <i className="fa-solid fa-chevron-down"></i>
+                    </div>
+                  </div>
+                  {errors.causing_department && (
+                    <p className="text-red-500 text-xs font-medium flex items-center gap-1 mt-1">
+                      <i className="fa-solid fa-circle-exclamation"></i> กรุณาเลือกหน่วยงานที่ทำให้เกิดอุบัติการณ์
+                    </p>
                   )}
-                >
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-3">
+                    <i className="fa-solid fa-users text-blue-500 mr-2"></i>
+                    ผู้รับผิดชอบ <span className="text-red-500">*</span>
+                  </label>
+                  <div
+                    className={cn(
+                      "grid grid-cols-1 sm:grid-cols-2 gap-4",
+                      errors.responsible_person &&
+                        "p-2 border border-red-300 rounded-xl shake",
+                    )}
+                  >
                   {[
                     "วัลดี สังแก้ว",
                     "พรทิพย์ อินริสพงส์",
@@ -821,6 +875,7 @@ export default function IncidentForm() {
                       </div>
                     </button>
                   )})}
+                  </div>
                 </div>
               </div>
             )}
@@ -862,6 +917,12 @@ export default function IncidentForm() {
                           <span className="text-sm text-slate-500">ผู้รับผิดชอบ</span>
                           <span className="text-sm font-bold text-slate-800">
                             <i className="fa-solid fa-user-doctor text-slate-400 mr-1"></i> {formData.responsible_person || "-"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center border-b border-slate-200/60 pb-2">
+                          <span className="text-sm text-slate-500">หน่วยงานที่เกิดเหตุ</span>
+                          <span className="text-sm font-bold text-slate-800">
+                            <i className="fa-solid fa-building text-slate-400 mr-1"></i> {formData.causing_department || "-"}
                           </span>
                         </div>
                       </div>

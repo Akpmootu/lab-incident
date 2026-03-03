@@ -6,7 +6,7 @@ import dayjs from 'dayjs';
 import Swal from 'sweetalert2';
 
 interface Incident {
-  id: number;
+  id: string;
   created_at: string;
   incident_date: string;
   risk_type: string;
@@ -19,6 +19,7 @@ interface Incident {
   group_type: string;
   guideline: string;
   responsible_person: string | null;
+  causing_department: string | null;
 }
 
 export default function DataTable() {
@@ -31,7 +32,7 @@ export default function DataTable() {
   const [filterPerson, setFilterPerson] = useState<string>('all');
 
   // Edit State
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Partial<Incident>>({});
   const [isSaving, setIsSaving] = useState(false);
 
@@ -98,6 +99,7 @@ export default function DataTable() {
           <div><span class="text-slate-500">ระดับ:</span> <span class="font-medium text-red-600">${incident.impact_level}</span></div>
           <div><span class="text-slate-500">กลุ่ม:</span> <span class="font-medium">${incident.group_type}</span></div>
           <div><span class="text-slate-500">ผู้รับผิดชอบ:</span> <span class="font-medium">${incident.responsible_person || '-'}</span></div>
+          <div class="col-span-2"><span class="text-slate-500">หน่วยงานที่เกิดเหตุ:</span> <span class="font-medium">${incident.causing_department || '-'}</span></div>
         </div>
         <div>
           <span class="text-slate-500 block mb-1">รายการความเสี่ยง:</span>
@@ -170,12 +172,43 @@ export default function DataTable() {
 
     setIsSaving(true);
     try {
-      const { error } = await supabase
+      // Find original incident to compare
+      const originalIncident = incidents.find(inc => inc.id === editingId);
+      if (!originalIncident) throw new Error("Original incident not found");
+
+      // Determine changes
+      const changes: Record<string, { old: any, new: any }> = {};
+      Object.keys(editData).forEach(key => {
+        const k = key as keyof Incident;
+        if (JSON.stringify(editData[k]) !== JSON.stringify(originalIncident[k])) {
+          changes[k] = { old: originalIncident[k], new: editData[k] };
+        }
+      });
+
+      // Update incident
+      const { error: updateError } = await supabase
         .from('incidents')
         .update(editData)
         .eq('id', editingId);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
+
+      // Log edit history if there are changes
+      if (Object.keys(changes).length > 0) {
+        const { error: historyError } = await supabase
+          .from('incident_edit_history')
+          .insert([{
+            incident_id: editingId,
+            edited_by: 'Admin', // In a real app, this would be the logged-in user
+            changes: changes
+          }]);
+        
+        if (historyError) {
+          console.error('Error logging edit history:', historyError);
+          // We don't throw here to avoid failing the whole save if just history fails,
+          // but in a strict system you might want to.
+        }
+      }
 
       Swal.fire({
         title: 'บันทึกสำเร็จ',
@@ -200,7 +233,7 @@ export default function DataTable() {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     const { value: password } = await Swal.fire({
       title: 'ยืนยันการลบข้อมูล',
       input: 'password',
@@ -432,12 +465,41 @@ export default function DataTable() {
                             </div>
                             <div>
                               <label className="block text-xs font-medium text-slate-500 mb-1">ผู้รับผิดชอบ</label>
-                              <input 
-                                type="text" 
+                              <select 
                                 value={editData.responsible_person || ''} 
                                 onChange={e => setEditData({...editData, responsible_person: e.target.value})}
                                 className="w-full p-2 border rounded-lg text-sm"
-                              />
+                              >
+                                <option value="">-- เลือกผู้รับผิดชอบ --</option>
+                                {[
+                                  "วัลดี สังแก้ว",
+                                  "พรทิพย์ อินริสพงส์",
+                                  "วรัญญา เพิ่มเดช",
+                                  "นลิน ฤทธิ์โต",
+                                  "อำพล เส็นบัตร",
+                                ].map(person => (
+                                  <option key={person} value={person}>{person}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-slate-500 mb-1">หน่วยงานที่เกิดเหตุ</label>
+                              <select 
+                                value={editData.causing_department || ''} 
+                                onChange={e => setEditData({...editData, causing_department: e.target.value})}
+                                className="w-full p-2 border rounded-lg text-sm"
+                              >
+                                <option value="">-- เลือกหน่วยงาน --</option>
+                                {[
+                                  "ER", "OPD", "IPD", "LR", "PCU", "NCD", "ANC", "ARV", 
+                                  "IT/งานประกัน", "LAB", "X-Ray", "จ่ายกลาง", "IC", "บริหาร", 
+                                  "แพทย์แผนไทย", "แพทย์", "ห้องบัตร", "ห้องฟัน", "ห้องยา", 
+                                  "ห้องยา NCD", "เวชปฏิบัติ", "สุขภาพจิต", "กายภาพ", 
+                                  "กลุ่มการพยาบาล", "การเงิน", "คลังยา", "ENV"
+                                ].map(dept => (
+                                  <option key={dept} value={dept}>{dept}</option>
+                                ))}
+                              </select>
                             </div>
 
                             <div className="md:col-span-3">
