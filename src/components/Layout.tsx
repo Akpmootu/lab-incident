@@ -6,6 +6,7 @@ import { cn } from '../lib/utils';
 export default function Layout({ children }: { children: ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
   const location = useLocation();
 
   const navItems = [
@@ -33,7 +34,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                 exit={{ opacity: 0, width: 0 }}
                 className="flex items-center gap-2 overflow-hidden whitespace-nowrap"
               >
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-md shadow-blue-200">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-maroon-700 to-maroon-900 flex items-center justify-center text-white font-bold shadow-md shadow-maroon-200">
                   <i className="fa-solid fa-microscope"></i>
                 </div>
                 <span className="font-bold text-slate-800 tracking-tight">Lab Incident</span>
@@ -59,14 +60,14 @@ export default function Layout({ children }: { children: ReactNode }) {
                 className={cn(
                   "flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group relative",
                   isActive 
-                    ? "bg-blue-50 text-blue-600 font-medium" 
+                    ? "bg-maroon-50 text-maroon-700 font-medium" 
                     : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                 )}
                 aria-label={item.label}
               >
                 <div className={cn(
                   "flex items-center justify-center w-6 h-6",
-                  isActive ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600"
+                  isActive ? "text-maroon-700" : "text-slate-400 group-hover:text-slate-600"
                 )}>
                   <i className={item.icon}></i>
                 </div>
@@ -98,7 +99,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             "flex items-center gap-3 p-3 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 shadow-sm transition-all",
             !isSidebarOpen && "justify-center"
           )}>
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center text-white shadow-md flex-shrink-0">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-maroon-600 to-maroon-800 flex items-center justify-center text-white shadow-md flex-shrink-0">
               <i className="fa-solid fa-user-doctor"></i>
             </div>
             {isSidebarOpen && (
@@ -124,7 +125,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               <i className="fa-solid fa-bars"></i>
             </button>
             <div className="font-bold text-slate-800 flex items-center gap-2 tracking-tight">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-maroon-700 to-maroon-900 flex items-center justify-center text-white shadow-md">
                 <i className="fa-solid fa-microscope"></i>
               </div>
               Lab Incident
@@ -133,17 +134,24 @@ export default function Layout({ children }: { children: ReactNode }) {
           
           <div className="hidden md:flex items-center gap-4">
             <div className="flex items-center gap-2 text-sm font-medium text-slate-500">
-              <i className="fa-solid fa-location-dot text-blue-500"></i>
+              <i className="fa-solid fa-location-dot text-maroon-600"></i>
               ระบบบันทึกอุบัติการณ์ความเสี่ยง
             </div>
             <div className="h-4 w-px bg-slate-300"></div>
             <Link 
               to="/report"
-              className="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
+              className="flex items-center gap-2 text-sm font-medium text-maroon-700 hover:text-maroon-800 hover:bg-maroon-50 px-3 py-1.5 rounded-lg transition-colors"
             >
               <i className="fa-solid fa-plus"></i>
               บันทึกใหม่
             </Link>
+            <button 
+              onClick={() => setIsGuideOpen(true)}
+              className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-maroon-700 hover:bg-maroon-50 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              <i className="fa-solid fa-book-open"></i>
+              คู่มือการใช้งาน
+            </button>
           </div>
 
           <div className="flex items-center gap-3">
@@ -174,7 +182,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               >
                 <div className="h-16 flex items-center justify-between px-4 border-b border-slate-100">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-md">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-maroon-700 to-maroon-900 flex items-center justify-center text-white font-bold shadow-md">
                       <i className="fa-solid fa-microscope"></i>
                     </div>
                     <span className="font-bold text-slate-800 tracking-tight">Lab Incident</span>
@@ -198,15 +206,25 @@ export default function Layout({ children }: { children: ReactNode }) {
                         className={cn(
                           "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
                           isActive 
-                            ? "bg-blue-50 text-blue-600 font-medium" 
+                            ? "bg-maroon-50 text-maroon-700 font-medium" 
                             : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                         )}
                       >
-                        <i className={cn(item.icon, "w-5 text-center", isActive ? "text-blue-600" : "text-slate-400")}></i>
+                        <i className={cn(item.icon, "w-5 text-center", isActive ? "text-maroon-700" : "text-slate-400")}></i>
                         {item.label}
                       </Link>
                     );
                   })}
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      setIsGuideOpen(true);
+                    }}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-maroon-50 hover:text-maroon-700 transition-all duration-200 w-full text-left"
+                  >
+                    <i className="fa-solid fa-book-open w-5 text-center text-slate-400"></i>
+                    คู่มือการใช้งาน
+                  </button>
                 </div>
               </motion.div>
             </>
@@ -224,7 +242,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         <footer className="bg-slate-50 border-t border-slate-200 py-6 px-6 flex flex-col md:flex-row items-center justify-between text-sm text-slate-500 z-10 gap-4">
           <div className="flex flex-col items-center md:items-start gap-1">
             <div className="flex items-center gap-2 font-medium text-slate-700">
-              <i className="fa-solid fa-shield-halved text-blue-500"></i>
+              <i className="fa-solid fa-shield-halved text-maroon-600"></i>
               <span>ระบบบริหารความเสี่ยง (Risk Management)</span>
             </div>
             <span className="text-xs">กลุ่มงานเทคนิคการแพทย์ โรงพยาบาลกงหรา</span>
@@ -235,12 +253,65 @@ export default function Layout({ children }: { children: ReactNode }) {
               <i className="fa-solid fa-code text-slate-400"></i>
               <span>พัฒนาโดย อรรฆพร ศรีปานรอด นวก.คอม</span>
             </div>
-            <a href="https://www.facebook.com/Mootu00" className="text-xs text-blue-500 hover:underline flex items-center gap-1">
+            <a href="https://www.facebook.com/Mootu00" className="text-xs text-maroon-600 hover:underline flex items-center gap-1">
               <i className="fa-solid fa-headset"></i>
               ติดต่อผู้ดูแลระบบ (IT Support)
             </a>
           </div>
         </footer>
+
+        {/* User Guide Modal */}
+        <AnimatePresence>
+          {isGuideOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                className="bg-white w-full max-w-6xl h-[90vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col"
+              >
+                <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-maroon-50 text-maroon-700 flex items-center justify-center">
+                      <i className="fa-solid fa-book-open"></i>
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-800">คู่มือการใช้งานระบบ</h3>
+                      <p className="text-xs text-slate-500">Kongrha Lab Incident Management Guide</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsGuideOpen(false)}
+                    className="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500 transition-colors"
+                  >
+                    <i className="fa-solid fa-xmark text-xl"></i>
+                  </button>
+                </div>
+                <div className="flex-1 bg-slate-50 relative">
+                  <iframe
+                    src="https://www.canva.com/design/DAHENtDojFw/5bIxztVzF9sD4Bmgom-OoA/view?embed"
+                    className="absolute inset-0 w-full h-full border-none"
+                    allowFullScreen
+                    title="User Guide"
+                  ></iframe>
+                </div>
+                <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-center">
+                  <button
+                    onClick={() => setIsGuideOpen(false)}
+                    className="px-8 py-2.5 bg-maroon-700 text-white rounded-xl font-medium hover:bg-maroon-800 transition-all shadow-lg shadow-maroon-200"
+                  >
+                    ปิดคู่มือ
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

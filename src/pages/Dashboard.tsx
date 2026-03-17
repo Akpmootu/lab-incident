@@ -268,9 +268,9 @@ export default function Dashboard() {
             <Line
               type="monotone"
               dataKey="value"
-              stroke="#f97316"
+              stroke="#800000"
               strokeWidth={2}
-              dot={{ r: 2, fill: "#f97316" }}
+              dot={{ r: 2, fill: "#800000" }}
               isAnimationActive={false}
             />
             <XAxis dataKey="name" hide />
@@ -285,7 +285,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-blue-500 flex flex-col items-center gap-3">
+        <div className="text-maroon-600 flex flex-col items-center gap-3">
           <i className="fa-solid fa-circle-notch fa-spin text-4xl"></i>
           <p className="font-medium">กำลังโหลดข้อมูล...</p>
         </div>
@@ -298,7 +298,7 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
-            <i className="fa-solid fa-chart-pie text-blue-600"></i>
+            <i className="fa-solid fa-chart-pie text-maroon-600"></i>
             สรุปรายงานอุบัติการณ์
           </h1>
           <p className="text-slate-500 mt-1">
@@ -311,7 +311,7 @@ export default function Dashboard() {
             onChange={(e) =>
               setViewMode(e.target.value as "monthly" | "yearly")
             }
-            className="bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none font-medium"
+            className="bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-xl focus:ring-maroon-500 focus:border-maroon-500 block p-2.5 outline-none font-medium"
           >
             <option value="monthly">รายเดือน</option>
             <option value="yearly">รายปี (ปีงบประมาณ)</option>
@@ -321,7 +321,7 @@ export default function Dashboard() {
             <select
               value={filterMonth}
               onChange={(e) => setFilterMonth(e.target.value)}
-              className="bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none font-medium"
+              className="bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-xl focus:ring-maroon-500 focus:border-maroon-500 block p-2.5 outline-none font-medium"
             >
               {[
                 { val: "01", label: "มกราคม" },
@@ -347,7 +347,7 @@ export default function Dashboard() {
           <select
             value={filterYear}
             onChange={(e) => setFilterYear(e.target.value)}
-            className="bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none font-medium"
+            className="bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-xl focus:ring-maroon-500 focus:border-maroon-500 block p-2.5 outline-none font-medium"
           >
             {[2024, 2025, 2026, 2027].map((year) => (
               <option key={year} value={year}>
@@ -358,7 +358,7 @@ export default function Dashboard() {
 
           <button
             onClick={saveAsImage}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center gap-2 shadow-sm"
+            className="bg-maroon-600 hover:bg-maroon-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center gap-2 shadow-sm"
           >
             <i className="fa-solid fa-image"></i>
             บันทึกรูปภาพ
@@ -384,25 +384,25 @@ export default function Dashboard() {
           <p className="text-xs text-slate-500 font-medium mb-1">รวมทั้งหมด</p>
           <p className="text-2xl font-bold text-slate-800">{summary.total}</p>
         </div>
-        <div className="bg-blue-50 p-4 rounded-2xl shadow-sm border border-blue-100 text-center">
-          <p className="text-xs text-blue-600 font-medium mb-1">
+        <div className="bg-maroon-50 p-4 rounded-2xl shadow-sm border border-maroon-100 text-center">
+          <p className="text-xs text-maroon-600 font-medium mb-1">
             Pre-analytical
           </p>
-          <p className="text-2xl font-bold text-blue-800">
+          <p className="text-2xl font-bold text-maroon-800">
             {summary.preAnalytical}
           </p>
         </div>
-        <div className="bg-indigo-50 p-4 rounded-2xl shadow-sm border border-indigo-100 text-center">
-          <p className="text-xs text-indigo-600 font-medium mb-1">Analytical</p>
-          <p className="text-2xl font-bold text-indigo-800">
+        <div className="bg-maroon-100 p-4 rounded-2xl shadow-sm border border-maroon-200 text-center">
+          <p className="text-xs text-maroon-700 font-medium mb-1">Analytical</p>
+          <p className="text-2xl font-bold text-maroon-900">
             {summary.analytical}
           </p>
         </div>
-        <div className="bg-purple-50 p-4 rounded-2xl shadow-sm border border-purple-100 text-center">
-          <p className="text-xs text-purple-600 font-medium mb-1">
+        <div className="bg-maroon-200 p-4 rounded-2xl shadow-sm border border-maroon-300 text-center">
+          <p className="text-xs text-maroon-800 font-medium mb-1">
             Post-analytical
           </p>
-          <p className="text-2xl font-bold text-purple-800">
+          <p className="text-2xl font-bold text-maroon-950">
             {summary.postAnalytical}
           </p>
         </div>

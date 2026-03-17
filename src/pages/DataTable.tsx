@@ -144,7 +144,7 @@ export default function DataTable() {
       showCancelButton: true,
       confirmButtonText: 'ตกลง',
       cancelButtonText: 'ยกเลิก',
-      confirmButtonColor: '#3b82f6',
+      confirmButtonColor: '#800000',
       cancelButtonColor: '#ef4444',
       inputValidator: (value) => {
         if (!value) {
@@ -214,7 +214,7 @@ export default function DataTable() {
         title: 'บันทึกสำเร็จ',
         text: 'แก้ไขข้อมูลเรียบร้อยแล้ว',
         icon: 'success',
-        confirmButtonColor: '#3b82f6',
+        confirmButtonColor: '#800000',
         timer: 1500
       });
 
@@ -265,7 +265,7 @@ export default function DataTable() {
             title: 'ลบสำเร็จ',
             text: 'ลบข้อมูลเรียบร้อยแล้ว',
             icon: 'success',
-            confirmButtonColor: '#3b82f6',
+            confirmButtonColor: '#800000',
             timer: 1500
           });
 
@@ -292,13 +292,13 @@ export default function DataTable() {
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white flex justify-between items-center">
+        <div className="bg-gradient-to-r from-maroon-700 to-maroon-900 p-6 text-white flex justify-between items-center">
           <div>
             <h2 className="text-2xl font-bold flex items-center gap-3">
               <i className="fa-solid fa-table-list"></i>
               ตารางข้อมูลอุบัติการณ์
             </h2>
-            <p className="text-blue-100 mt-1 opacity-90">รายการอุบัติการณ์ความเสี่ยงทั้งหมด</p>
+            <p className="text-maroon-100 mt-1 opacity-90">รายการอุบัติการณ์ความเสี่ยงทั้งหมด</p>
           </div>
           <div className="bg-white/20 px-4 py-2 rounded-xl backdrop-blur-sm border border-white/10">
             <span className="text-sm font-medium">รวมทั้งหมด:</span>
@@ -317,14 +317,14 @@ export default function DataTable() {
                 placeholder="ค้นหา..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-maroon-500 focus:ring-1 focus:ring-maroon-500 transition-all text-sm"
               />
             </div>
             
             <select
               value={filterYear}
               onChange={(e) => setFilterYear(e.target.value)}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm appearance-none font-medium"
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-maroon-500 focus:ring-1 focus:ring-maroon-500 transition-all text-sm appearance-none font-medium"
             >
               <option value="all">ทุกปี</option>
               {years.map(year => (
@@ -335,7 +335,7 @@ export default function DataTable() {
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm appearance-none"
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-maroon-500 focus:ring-1 focus:ring-maroon-500 transition-all text-sm appearance-none"
             >
               <option value="all">ทุกประเภท</option>
               <option value="Clinic">Clinic</option>
@@ -345,7 +345,7 @@ export default function DataTable() {
             <select
               value={filterImpact}
               onChange={(e) => setFilterImpact(e.target.value)}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm appearance-none"
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-maroon-500 focus:ring-1 focus:ring-maroon-500 transition-all text-sm appearance-none"
             >
               <option value="all">ทุกระดับความรุนแรง</option>
               <optgroup label="Clinic">
@@ -359,7 +359,7 @@ export default function DataTable() {
             <select
               value={filterPerson}
               onChange={(e) => setFilterPerson(e.target.value)}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm appearance-none"
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-maroon-500 focus:ring-1 focus:ring-maroon-500 transition-all text-sm appearance-none"
             >
               <option value="all">ทุกคน (ผู้รับผิดชอบ)</option>
               {persons.map(person => (
@@ -385,7 +385,7 @@ export default function DataTable() {
                 {loading ? (
                   <tr>
                     <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
-                      <i className="fa-solid fa-circle-notch fa-spin text-2xl mb-2 text-blue-500"></i>
+                      <i className="fa-solid fa-circle-notch fa-spin text-2xl mb-2 text-maroon-600"></i>
                       <p>กำลังโหลดข้อมูล...</p>
                     </td>
                   </tr>
@@ -401,7 +401,7 @@ export default function DataTable() {
                     <tr key={incident.id} className="bg-white border-b border-slate-100 hover:bg-slate-50 transition-colors">
                       {editingId === incident.id ? (
                         // Edit Mode Row
-                        <td colSpan={6} className="p-4 bg-blue-50/50">
+                        <td colSpan={6} className="p-4 bg-maroon-50/50">
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                             <div>
                               <label className="block text-xs font-medium text-slate-500 mb-1">วันที่</label>
@@ -559,7 +559,7 @@ export default function DataTable() {
                             <button 
                               onClick={handleSaveEdit}
                               disabled={isSaving}
-                              className="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                              className="px-4 py-2 text-sm text-white bg-maroon-600 rounded-lg hover:bg-maroon-700 disabled:opacity-50 flex items-center gap-2"
                             >
                               {isSaving ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-save"></i>}
                               บันทึก
@@ -575,7 +575,7 @@ export default function DataTable() {
                           <td className="px-4 py-3">
                             <span className={cn(
                               "px-2.5 py-1 rounded-full text-xs font-medium",
-                              incident.risk_type === 'Clinic' ? "bg-blue-100 text-blue-800" : "bg-orange-100 text-orange-800"
+                              incident.risk_type === 'Clinic' ? "bg-maroon-100 text-maroon-800" : "bg-slate-100 text-slate-800"
                             )}>
                               {incident.risk_type}
                             </span>
@@ -608,7 +608,7 @@ export default function DataTable() {
                             <div className="flex items-center justify-center gap-2">
                               <button 
                                 onClick={() => handleViewDetails(incident)}
-                                className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center justify-center transition-colors"
+                                className="w-8 h-8 rounded-full bg-maroon-50 text-maroon-600 hover:bg-maroon-100 flex items-center justify-center transition-colors"
                                 title="ดูรายละเอียด"
                                 aria-label={`ดูรายละเอียดอุบัติการณ์วันที่ ${formatDateTH(incident.incident_date)}`}
                               >

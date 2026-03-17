@@ -10,22 +10,22 @@ const RISK_TYPES = [
     label: "Clinic",
     description: "ความเสี่ยงที่เกี่ยวข้องกับการดูแลรักษาผู้ป่วยโดยตรง",
     icon: "fa-solid fa-stethoscope",
-    color: "text-blue-600",
-    bg: "bg-blue-50",
-    border: "border-blue-200",
-    activeBorder: "border-blue-500",
-    activeBg: "bg-blue-50/50",
+    color: "text-maroon-600",
+    bg: "bg-maroon-50",
+    border: "border-maroon-200",
+    activeBorder: "border-maroon-500",
+    activeBg: "bg-maroon-50/50",
   },
   {
     id: "Non-clinic",
     label: "Non-clinic",
     description: "ความเสี่ยงทั่วไปที่ไม่เกี่ยวกับการรักษาผู้ป่วยโดยตรง",
     icon: "fa-solid fa-building",
-    color: "text-teal-600",
-    bg: "bg-teal-50",
-    border: "border-teal-200",
-    activeBorder: "border-teal-500",
-    activeBg: "bg-teal-50/50",
+    color: "text-maroon-600",
+    bg: "bg-maroon-50",
+    border: "border-maroon-200",
+    activeBorder: "border-maroon-500",
+    activeBg: "bg-maroon-50/50",
   },
 ];
 
@@ -262,7 +262,7 @@ export default function IncidentForm() {
         title: "บันทึกสำเร็จ! ✅",
         text: "ข้อมูลอุบัติการณ์ถูกบันทึกเรียบร้อยแล้ว",
         icon: "success",
-        confirmButtonColor: "#3b82f6",
+        confirmButtonColor: "#800000",
         confirmButtonText: "ตกลง",
       });
 
@@ -324,7 +324,7 @@ export default function IncidentForm() {
       <div className="flex items-center justify-between relative">
         <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1.5 bg-slate-100 rounded-full z-0"></div>
         <div
-          className="absolute left-0 top-1/2 -translate-y-1/2 h-1.5 bg-blue-600 rounded-full z-0 transition-all duration-500 ease-out"
+          className="absolute left-0 top-1/2 -translate-y-1/2 h-1.5 bg-maroon-600 rounded-full z-0 transition-all duration-500 ease-out"
           style={{ width: `${((step - 1) / 5) * 100}%` }}
         ></div>
 
@@ -341,9 +341,9 @@ export default function IncidentForm() {
               className={cn(
                 "w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 border-[3px]",
                 step > s.num
-                  ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200/50"
+                  ? "bg-maroon-600 text-white border-maroon-600 shadow-md shadow-maroon-200/50"
                   : step === s.num
-                  ? "bg-white text-blue-600 border-blue-600 shadow-lg shadow-blue-200 scale-110"
+                  ? "bg-white text-maroon-600 border-maroon-600 shadow-lg shadow-maroon-200 scale-110"
                   : "bg-white text-slate-300 border-slate-200"
               )}
             >
@@ -351,7 +351,7 @@ export default function IncidentForm() {
             </div>
             <span className={cn(
               "absolute top-12 text-xs font-medium whitespace-nowrap transition-colors duration-300",
-              step === s.num ? "text-blue-700 font-bold" : step > s.num ? "text-slate-600" : "text-slate-400"
+              step === s.num ? "text-maroon-700 font-bold" : step > s.num ? "text-slate-600" : "text-slate-400"
             )}>
               {s.label}
             </span>
@@ -363,12 +363,12 @@ export default function IncidentForm() {
 
   return (
     <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white">
+      <div className="bg-gradient-to-r from-maroon-700 to-maroon-900 p-6 text-white">
         <h2 className="text-2xl font-bold flex items-center gap-3">
           <i className="fa-solid fa-file-signature"></i>
           แบบบันทึกอุบัติการณ์ความเสี่ยง
         </h2>
-        <p className="text-blue-100 mt-1 opacity-90">
+        <p className="text-maroon-100 mt-1 opacity-90">
           กลุ่มงานเทคนิคการแพทย์ โรงพยาบาลกงหรา
         </p>
       </div>
@@ -392,7 +392,7 @@ export default function IncidentForm() {
                     วันที่เกิดอุบัติการณ์ <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-blue-600">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-maroon-600">
                       <i className="fa-regular fa-calendar-days text-lg"></i>
                     </div>
                     <input
@@ -403,10 +403,10 @@ export default function IncidentForm() {
                         handleInputChange("incident_date", e.target.value)
                       }
                       className={cn(
-                        "w-full pl-12 pr-4 py-3.5 bg-slate-50 border rounded-xl outline-none transition-all text-slate-800 font-medium focus:bg-white focus:ring-4 focus:ring-blue-500/10",
+                        "w-full pl-12 pr-4 py-3.5 bg-slate-50 border rounded-xl outline-none transition-all text-slate-800 font-medium focus:bg-white focus:ring-4 focus:ring-maroon-500/10",
                         errors.incident_date
                           ? "border-red-400 focus:border-red-500 shake"
-                          : "border-slate-200 focus:border-blue-500"
+                          : "border-slate-200 focus:border-maroon-500"
                       )}
                     />
                   </div>
@@ -496,7 +496,7 @@ export default function IncidentForm() {
                           className={cn(
                             "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 text-center",
                             formData.process_type === type.id
-                              ? "border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm"
+                              ? "border-maroon-500 bg-maroon-50 text-maroon-700 shadow-sm"
                               : cn(
                                   "border-slate-200 hover:border-slate-300 text-slate-600",
                                   errors.process_type && "border-red-300 shake",
@@ -518,7 +518,7 @@ export default function IncidentForm() {
             {/* Step 2: Risk Items */}
             {step === 2 && (
               <div className="space-y-6">
-                <div className="bg-blue-50 text-blue-800 p-4 rounded-xl flex items-start gap-3 border border-blue-100">
+                <div className="bg-maroon-50 text-maroon-800 p-4 rounded-xl flex items-start gap-3 border border-maroon-100">
                   <i className="fa-solid fa-circle-info mt-1"></i>
                   <div>
                     <p className="font-medium">
@@ -539,7 +539,7 @@ export default function IncidentForm() {
                     placeholder="ค้นหารายการความเสี่ยง..."
                     value={riskItemSearch}
                     onChange={(e) => setRiskItemSearch(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm"
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-maroon-500 focus:ring-1 focus:ring-maroon-500 transition-all text-sm"
                   />
                 </div>
 
@@ -556,7 +556,7 @@ export default function IncidentForm() {
                       className={cn(
                         "flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
                         formData.risk_items.includes(item)
-                          ? "bg-blue-50 border-blue-200"
+                          ? "bg-maroon-50 border-maroon-200"
                           : "bg-white border-slate-200 hover:bg-slate-50",
                       )}
                     >
@@ -564,7 +564,7 @@ export default function IncidentForm() {
                         <input
                           type="radio"
                           name="risk_item"
-                          className="peer h-5 w-5 cursor-pointer appearance-none rounded-full border border-slate-300 checked:border-blue-600 checked:bg-blue-600 transition-all"
+                          className="peer h-5 w-5 cursor-pointer appearance-none rounded-full border border-slate-300 checked:border-maroon-600 checked:bg-maroon-600 transition-all"
                           checked={formData.risk_items.includes(item)}
                           onChange={() => handleRadioChange(item)}
                         />
@@ -574,7 +574,7 @@ export default function IncidentForm() {
                         className={cn(
                           "text-sm",
                           formData.risk_items.includes(item)
-                            ? "text-blue-900 font-medium"
+                            ? "text-maroon-900 font-medium"
                             : "text-slate-700",
                         )}
                       >
@@ -674,7 +674,7 @@ export default function IncidentForm() {
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-3">
-                    <i className="fa-solid fa-gauge-high text-blue-500 mr-2"></i>
+                    <i className="fa-solid fa-gauge-high text-maroon-500 mr-2"></i>
                     ระดับผลกระทบ (ความรุนแรง) <span className="text-red-500">*</span>
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -731,7 +731,7 @@ export default function IncidentForm() {
                         className={cn(
                           "flex-1 py-3 px-4 rounded-xl border-2 font-medium transition-all",
                           formData.group_type === type
-                            ? "border-blue-500 bg-blue-50 text-blue-700 shadow-sm"
+                            ? "border-maroon-500 bg-maroon-50 text-maroon-700 shadow-sm"
                             : cn(
                                 "border-slate-200 text-slate-600 hover:bg-slate-50",
                                 errors.group_type && "border-red-300 shake",
@@ -778,7 +778,7 @@ export default function IncidentForm() {
               <div className="space-y-8">
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-3">
-                    <i className="fa-solid fa-building text-blue-500 mr-2"></i>
+                    <i className="fa-solid fa-building text-maroon-500 mr-2"></i>
                     หน่วยงานที่ทำให้เกิดอุบัติการณ์ <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
@@ -786,8 +786,8 @@ export default function IncidentForm() {
                       value={formData.causing_department}
                       onChange={(e) => handleInputChange("causing_department", e.target.value)}
                       className={cn(
-                        "w-full pl-4 pr-10 py-3.5 bg-slate-50 border rounded-xl outline-none transition-all text-slate-800 font-medium appearance-none focus:bg-white focus:ring-4 focus:ring-blue-500/10",
-                        errors.causing_department ? "border-red-400 focus:border-red-500 shake" : "border-slate-200 focus:border-blue-500"
+                        "w-full pl-4 pr-10 py-3.5 bg-slate-50 border rounded-xl outline-none transition-all text-slate-800 font-medium appearance-none focus:bg-white focus:ring-4 focus:ring-maroon-500/10",
+                        errors.causing_department ? "border-red-400 focus:border-red-500 shake" : "border-slate-200 focus:border-maroon-500"
                       )}
                     >
                       <option value="" disabled>-- เลือกหน่วยงาน --</option>
@@ -818,7 +818,7 @@ export default function IncidentForm() {
 
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-3">
-                    <i className="fa-solid fa-users text-blue-500 mr-2"></i>
+                    <i className="fa-solid fa-users text-maroon-500 mr-2"></i>
                     ผู้รับผิดชอบ <span className="text-red-500">*</span>
                   </label>
                   <div
@@ -845,7 +845,7 @@ export default function IncidentForm() {
                       className={cn(
                         "flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-200 text-left group",
                         formData.responsible_person === person
-                          ? "border-blue-500 bg-blue-50 text-blue-800 shadow-md"
+                          ? "border-maroon-500 bg-maroon-50 text-maroon-800 shadow-md"
                           : "border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300",
                       )}
                     >
@@ -853,7 +853,7 @@ export default function IncidentForm() {
                         className={cn(
                           "w-12 h-12 rounded-xl flex items-center justify-center text-xl shadow-sm transition-transform group-hover:scale-110",
                           formData.responsible_person === person
-                            ? "bg-blue-600 text-white"
+                            ? "bg-maroon-600 text-white"
                             : "bg-white text-slate-400 border border-slate-200",
                         )}
                       >
@@ -862,15 +862,15 @@ export default function IncidentForm() {
                       <div className="flex-1">
                         <span className="font-bold block text-lg">{person}</span>
                         <span className="text-xs font-medium text-slate-500 flex items-center gap-1 mt-0.5">
-                          <i className="fa-solid fa-chart-simple text-blue-400"></i> บันทึกแล้ว {count} ครั้ง
+                          <i className="fa-solid fa-chart-simple text-maroon-400"></i> บันทึกแล้ว {count} ครั้ง
                         </span>
                       </div>
                       <div className={cn(
                         "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors",
-                        formData.responsible_person === person ? "border-blue-500" : "border-slate-300"
+                        formData.responsible_person === person ? "border-maroon-500" : "border-slate-300"
                       )}>
                         {formData.responsible_person === person && (
-                          <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                          <div className="w-3 h-3 rounded-full bg-maroon-500"></div>
                         )}
                       </div>
                     </button>
@@ -885,7 +885,7 @@ export default function IncidentForm() {
               <div className="space-y-6">
                 <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
                   <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+                    <div className="w-10 h-10 rounded-xl bg-maroon-50 text-maroon-600 flex items-center justify-center text-xl">
                       <i className="fa-solid fa-clipboard-check"></i>
                     </div>
                     <div>
@@ -898,7 +898,7 @@ export default function IncidentForm() {
                     {/* General Info Card */}
                     <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 space-y-4">
                       <h4 className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                        <i className="fa-regular fa-calendar text-blue-500"></i> ข้อมูลทั่วไป
+                        <i className="fa-regular fa-calendar text-maroon-500"></i> ข้อมูลทั่วไป
                       </h4>
                       <div className="space-y-3">
                         <div className="flex justify-between items-center border-b border-slate-200/60 pb-2">
@@ -910,7 +910,7 @@ export default function IncidentForm() {
                         <div className="flex justify-between items-center border-b border-slate-200/60 pb-2">
                           <span className="text-sm text-slate-500">ประเภทความเสี่ยง</span>
                           <span className="text-sm font-bold text-slate-800">
-                            {formData.risk_type} {formData.process_type && <span className="text-blue-600">({formData.process_type})</span>}
+                            {formData.risk_type} {formData.process_type && <span className="text-maroon-600">({formData.process_type})</span>}
                           </span>
                         </div>
                         <div className="flex justify-between items-center border-b border-slate-200/60 pb-2">
@@ -968,9 +968,9 @@ export default function IncidentForm() {
 
                   {/* Details Section */}
                   <div className="space-y-4 pt-2">
-                    <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
-                      <h4 className="text-sm font-bold text-blue-800 mb-2 flex items-center gap-2">
-                        <i className="fa-solid fa-triangle-exclamation text-blue-500"></i> รายการความเสี่ยง
+                    <div className="bg-maroon-50/50 p-4 rounded-xl border border-maroon-100">
+                      <h4 className="text-sm font-bold text-maroon-800 mb-2 flex items-center gap-2">
+                        <i className="fa-solid fa-triangle-exclamation text-maroon-500"></i> รายการความเสี่ยง
                       </h4>
                       <ul className="list-disc list-inside text-sm font-medium text-slate-700 space-y-1 ml-1">
                         {formData.risk_items.map((item, i) => <li key={i}>{item}</li>)}
@@ -1029,7 +1029,7 @@ export default function IncidentForm() {
           {step < 6 ? (
             <button
               onClick={nextStep}
-              className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-200 flex items-center gap-3 hover:scale-105 focus:ring-4 focus:ring-blue-500/20"
+              className="px-8 py-3 bg-maroon-600 hover:bg-maroon-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-maroon-200 flex items-center gap-3 hover:scale-105 focus:ring-4 focus:ring-maroon-500/20"
               aria-label="ถัดไป"
             >
               ถัดไป{" "}

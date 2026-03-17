@@ -7,7 +7,7 @@ import {
 } from 'recharts';
 import { cn } from '../lib/utils';
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899'];
+const COLORS = ['#800000', '#991b1b', '#b91c1c', '#dc2626', '#ef4444', '#f87171', '#fca5a5'];
 
 const MONTHS_TH = [
   'ต.ค.', 'พ.ย.', 'ธ.ค.', 'ม.ค.', 'ก.พ.', 'มี.ค.', 
@@ -247,7 +247,7 @@ export default function ChartDashboard() {
       return (
         <div className="bg-white p-3 border border-slate-200 shadow-lg rounded-xl">
           <p className="font-bold text-slate-800 mb-1">{label || payload[0].name}</p>
-          <p className="text-blue-600 font-medium">
+          <p className="text-maroon-600 font-medium">
             จำนวน: {payload[0].value} ครั้ง
           </p>
         </div>
@@ -259,7 +259,7 @@ export default function ChartDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon-600"></div>
       </div>
     );
   }
@@ -281,7 +281,7 @@ export default function ChartDashboard() {
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
-                className="w-full text-sm border-slate-200 rounded-xl focus:ring-blue-500 focus:border-blue-500 bg-slate-50"
+                className="w-full text-sm border-slate-200 rounded-xl focus:ring-maroon-500 focus:border-maroon-500 bg-slate-50"
               >
                 <option value="all">ทุกปีงบประมาณ</option>
                 {years.map(y => <option key={y} value={y}>{y}</option>)}
@@ -292,7 +292,7 @@ export default function ChartDashboard() {
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="w-full text-sm border-slate-200 rounded-xl focus:ring-blue-500 focus:border-blue-500 bg-slate-50"
+                className="w-full text-sm border-slate-200 rounded-xl focus:ring-maroon-500 focus:border-maroon-500 bg-slate-50"
               >
                 <option value="all">ทุกเดือน</option>
                 {MONTHS_TH.map((m, i) => <option key={i} value={i}>{m}</option>)}
@@ -303,7 +303,7 @@ export default function ChartDashboard() {
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full text-sm border-slate-200 rounded-xl focus:ring-blue-500 focus:border-blue-500 bg-slate-50"
+                className="w-full text-sm border-slate-200 rounded-xl focus:ring-maroon-500 focus:border-maroon-500 bg-slate-50"
               >
                 <option value="all">ทุกหมวดหมู่</option>
                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -318,13 +318,13 @@ export default function ChartDashboard() {
         {/* KPI: Total Incidents */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} 
-          className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-5 text-white shadow-lg shadow-blue-200 relative overflow-hidden col-span-1 sm:col-span-2 lg:col-span-1"
+          className="bg-gradient-to-br from-maroon-700 to-maroon-900 rounded-2xl p-5 text-white shadow-lg shadow-maroon-200 relative overflow-hidden col-span-1 sm:col-span-2 lg:col-span-1"
         >
           <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full blur-2xl"></div>
           <div className="flex justify-between items-start mb-2">
             <div>
-              <p className="text-blue-100 text-sm font-medium">อุบัติการณ์ทั้งหมด</p>
-              <p className="text-xs text-blue-200/80">Total Incidents</p>
+              <p className="text-maroon-100 text-sm font-medium">อุบัติการณ์ทั้งหมด</p>
+              <p className="text-xs text-maroon-200/80">Total Incidents</p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl backdrop-blur-sm">
               <i className="fa-solid fa-chart-line"></i>
@@ -332,21 +332,21 @@ export default function ChartDashboard() {
           </div>
           <div className="flex items-end gap-2 mt-2">
             <h3 className="text-4xl font-bold">{totalIncidents}</h3>
-            <span className="text-blue-200 mb-1 text-sm">ครั้ง</span>
+            <span className="text-maroon-200 mb-1 text-sm">ครั้ง</span>
           </div>
           
           {selectedYear !== 'all' && (
-            <div className="mt-3 pt-3 border-t border-blue-500/30 flex items-center gap-2 text-xs">
+            <div className="mt-3 pt-3 border-t border-maroon-500/30 flex items-center gap-2 text-xs">
               {yoyChange !== null ? (
                 <>
                   <span className={cn("px-2 py-0.5 rounded-full font-medium flex items-center gap-1", yoyChange > 0 ? "bg-red-500/20 text-red-100" : yoyChange < 0 ? "bg-emerald-500/20 text-emerald-100" : "bg-slate-500/20 text-slate-100")}>
                     {yoyChange > 0 ? <i className="fa-solid fa-arrow-trend-up"></i> : yoyChange < 0 ? <i className="fa-solid fa-arrow-trend-down"></i> : <i className="fa-solid fa-minus"></i>}
                     {Math.abs(yoyChange).toFixed(1)}%
                   </span>
-                  <span className="text-blue-100 opacity-80">เทียบปีก่อน</span>
+                  <span className="text-maroon-100 opacity-80">เทียบปีก่อน</span>
                 </>
               ) : (
-                <span className="text-blue-100 opacity-80">ไม่มีข้อมูลปีก่อน</span>
+                <span className="text-maroon-100 opacity-80">ไม่มีข้อมูลปีก่อน</span>
               )}
             </div>
           )}
@@ -362,7 +362,7 @@ export default function ChartDashboard() {
               <p className="text-slate-500 text-sm font-bold">ประเภทความเสี่ยง</p>
               <p className="text-xs text-slate-400">Clinic / Non-clinic</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">
+            <div className="w-10 h-10 rounded-xl bg-maroon-50 text-maroon-600 flex items-center justify-center text-xl">
               <i className="fa-solid fa-stethoscope"></i>
             </div>
           </div>
@@ -388,7 +388,7 @@ export default function ChartDashboard() {
               <p className="text-slate-500 text-sm font-bold">ขั้นตอน (Clinic)</p>
               <p className="text-xs text-slate-400">Process Types</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center text-xl">
+            <div className="w-10 h-10 rounded-xl bg-maroon-50 text-maroon-600 flex items-center justify-center text-xl">
               <i className="fa-solid fa-vials"></i>
             </div>
           </div>
@@ -418,7 +418,7 @@ export default function ChartDashboard() {
               <p className="text-slate-500 text-sm font-bold">ผู้รายงานทั้งหมด</p>
               <p className="text-xs text-slate-400">Unique Reporters</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-xl">
+            <div className="w-10 h-10 rounded-xl bg-maroon-50 text-maroon-600 flex items-center justify-center text-xl">
               <i className="fa-solid fa-users"></i>
             </div>
           </div>
@@ -441,7 +441,7 @@ export default function ChartDashboard() {
               <h3 className="text-lg font-bold text-slate-800">แนวโน้มอุบัติการณ์รายเดือน</h3>
               <p className="text-xs text-slate-500 mt-1">ปีงบประมาณ ต.ค. - ก.ย.</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-maroon-50 text-maroon-600 flex items-center justify-center">
               <i className="fa-solid fa-chart-column"></i>
             </div>
           </div>
@@ -452,9 +452,9 @@ export default function ChartDashboard() {
                 <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} allowDecimals={false} />
                 <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: '#f1f5f9' }} />
-                <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={40}>
+                <Bar dataKey="count" fill="#800000" radius={[4, 4, 0, 0]} maxBarSize={40}>
                   {monthlyTrendData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.count > 0 ? '#3b82f6' : '#e2e8f0'} />
+                    <Cell key={`cell-${index}`} fill={entry.count > 0 ? '#800000' : '#e2e8f0'} />
                   ))}
                 </Bar>
               </BarChart>
@@ -472,7 +472,7 @@ export default function ChartDashboard() {
               <h3 className="text-lg font-bold text-slate-800">สรุปการรายงาน</h3>
               <p className="text-xs text-slate-500 mt-1">แยกตามหมวดหมู่</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-maroon-50 text-maroon-600 flex items-center justify-center">
               <i className="fa-solid fa-chart-pie"></i>
             </div>
           </div>
@@ -522,7 +522,7 @@ export default function ChartDashboard() {
               <h3 className="text-lg font-bold text-slate-800">อัตราส่วนการจัดกลุ่ม</h3>
               <p className="text-xs text-slate-500 mt-1">Miss vs Near Miss</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-maroon-50 text-maroon-600 flex items-center justify-center">
               <i className="fa-solid fa-scale-balanced"></i>
             </div>
           </div>
@@ -563,7 +563,7 @@ export default function ChartDashboard() {
               <h3 className="text-lg font-bold text-slate-800">รายการความเสี่ยง</h3>
               <p className="text-xs text-slate-500 mt-1">สัดส่วนของรายการความเสี่ยงที่พบ</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-maroon-50 text-maroon-600 flex items-center justify-center">
               <i className="fa-solid fa-triangle-exclamation"></i>
             </div>
           </div>
@@ -604,7 +604,7 @@ export default function ChartDashboard() {
               <h3 className="text-lg font-bold text-slate-800">Top 5 ผู้รายงาน</h3>
               <p className="text-xs text-slate-500 mt-1">ความถี่ในการบันทึกข้อมูล</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-maroon-50 text-maroon-600 flex items-center justify-center">
               <i className="fa-solid fa-medal"></i>
             </div>
           </div>
@@ -616,7 +616,7 @@ export default function ChartDashboard() {
                   <XAxis type="number" hide />
                   <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} width={80} />
                   <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: '#f1f5f9' }} />
-                  <Bar dataKey="value" fill="#10b981" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fill: '#64748b', fontSize: 12, fontWeight: 'bold' }} />
+                  <Bar dataKey="value" fill="#800000" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fill: '#64748b', fontSize: 12, fontWeight: 'bold' }} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -635,7 +635,7 @@ export default function ChartDashboard() {
               <h3 className="text-lg font-bold text-slate-800">Top 5 หน่วยงาน</h3>
               <p className="text-xs text-slate-500 mt-1">ที่ทำให้เกิดอุบัติการณ์</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-maroon-50 text-maroon-600 flex items-center justify-center">
               <i className="fa-solid fa-building-circle-exclamation"></i>
             </div>
           </div>
@@ -647,7 +647,7 @@ export default function ChartDashboard() {
                   <XAxis type="number" hide />
                   <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} width={80} />
                   <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: '#f1f5f9' }} />
-                  <Bar dataKey="value" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fill: '#64748b', fontSize: 12, fontWeight: 'bold' }} />
+                  <Bar dataKey="value" fill="#800000" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fill: '#64748b', fontSize: 12, fontWeight: 'bold' }} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -666,7 +666,7 @@ export default function ChartDashboard() {
               <h3 className="text-lg font-bold text-slate-800">Top 3 อุบัติการณ์</h3>
               <p className="text-xs text-slate-500 mt-1">ที่พบบ่อยที่สุด (Area of Focus)</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-maroon-50 text-maroon-600 flex items-center justify-center">
               <i className="fa-solid fa-fire"></i>
             </div>
           </div>
@@ -734,8 +734,8 @@ export default function ChartDashboard() {
                     <tr 
                       onClick={() => setExpandedRowId(isExpanded ? null : item.id)}
                       className={cn(
-                        "group cursor-pointer transition-colors hover:bg-blue-50/50",
-                        isExpanded ? "bg-blue-50/30" : "bg-white"
+                        "group cursor-pointer transition-colors hover:bg-maroon-50/50",
+                        isExpanded ? "bg-maroon-50/30" : "bg-white"
                       )}
                     >
                       <td className="p-4 pl-6 text-sm text-slate-600 whitespace-nowrap">
@@ -744,7 +744,7 @@ export default function ChartDashboard() {
                       <td className="p-4 text-sm">
                         <span className={cn(
                           "px-2.5 py-1 rounded-md text-xs font-medium",
-                          item.risk_type === 'Clinic' ? "bg-blue-100 text-blue-700" : "bg-teal-100 text-teal-700"
+                          item.risk_type === 'Clinic' ? "bg-maroon-100 text-maroon-700" : "bg-teal-100 text-teal-700"
                         )}>
                           {category}
                         </span>

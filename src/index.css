@@ -2,14 +2,24 @@
 
 @theme {
   --font-sans: "Kanit", ui-sans-serif, system-ui, sans-serif;
-  --color-primary: #0f172a;
+  --color-primary: #800000;
   --color-secondary: #f8fafc;
+  --color-maroon-50: #fff1f1;
+  --color-maroon-100: #ffdfdf;
+  --color-maroon-200: #ffc5c5;
+  --color-maroon-300: #ff9d9d;
+  --color-maroon-400: #ff6464;
+  --color-maroon-500: #ff3131;
+  --color-maroon-600: #ef1010;
+  --color-maroon-700: #c90808;
+  --color-maroon-800: #a60a0a;
+  --color-maroon-900: #800000;
 }
 
 @layer base {
   body {
     font-family: "Kanit", sans-serif;
-    background: linear-gradient(-45deg, #ffffff, #f1f5f9, #e2e8f0, #ffffff);
+    background: linear-gradient(-45deg, #ffffff, #fff1f1, #ffe4e4, #ffffff);
     background-size: 400% 400%;
     animation: gradientBG 15s ease infinite;
     color: #1e293b;
@@ -53,7 +63,7 @@
   top: 0.35rem;
   transform: translateY(0);
   font-size: 0.75rem;
-  color: #3b82f6;
+  color: #800000;
   font-weight: 500;
 }
 

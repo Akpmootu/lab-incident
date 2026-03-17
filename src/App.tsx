@@ -35,7 +35,7 @@ export default function App() {
               transition={{ duration: 0.5, ease: "easeOut" }}
               className="flex flex-col items-center gap-6"
             >
-              <div className="relative w-24 h-24 rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-2xl shadow-blue-500/30">
+              <div className="relative w-24 h-24 rounded-3xl bg-gradient-to-br from-maroon-700 to-maroon-900 flex items-center justify-center text-white shadow-2xl shadow-maroon-500/30">
                 <div className="absolute inset-0 rounded-3xl border-2 border-white/20 animate-ping"></div>
                 <motion.i 
                   animate={{ scale: [1, 1.1, 1] }}
@@ -52,7 +52,7 @@ export default function App() {
                   initial={{ width: "0%" }}
                   animate={{ width: "100%" }}
                   transition={{ duration: 1.5, ease: "easeInOut" }}
-                  className="h-full bg-blue-600 rounded-full"
+                  className="h-full bg-maroon-700 rounded-full"
                 ></motion.div>
               </div>
             </motion.div>
