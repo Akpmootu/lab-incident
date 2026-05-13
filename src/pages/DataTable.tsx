@@ -4,6 +4,8 @@ import { cn } from '../lib/utils';
 import { formatDateTH } from '../lib/dateUtils';
 import dayjs from 'dayjs';
 import Swal from 'sweetalert2';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 interface Incident {
   id: string;
@@ -35,6 +37,7 @@ export default function DataTable() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Partial<Incident>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     fetchIncidents();
@@ -289,6 +292,100 @@ export default function DataTable() {
     }
   };
 
+  const handleExportExcel = async () => {
+    const { value: password } = await Swal.fire({
+      title: 'ยืนยันการดึงข้อมูล',
+      input: 'password',
+      inputLabel: 'กรุณากรอกรหัสผ่านเพื่อยืนยันการ Export',
+      inputPlaceholder: 'รหัสผ่าน',
+      showCancelButton: true,
+      confirmButtonText: 'ตกลง',
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#800000',
+      cancelButtonColor: '#64748b',
+      inputValidator: (value) => {
+        if (!value) {
+          return 'กรุณากรอกรหัสผ่าน!';
+        }
+      }
+    });
+
+    if (password) {
+      if (password === 'LAB11414@2569') {
+        setIsExporting(true);
+        try {
+          const workbook = new ExcelJS.Workbook();
+          const worksheet = workbook.addWorksheet('Incidents');
+
+          worksheet.columns = [
+            { header: 'ลำดับ', key: 'id', width: 10 },
+            { header: 'วันที่', key: 'incident_date', width: 15 },
+            { header: 'ประเภท', key: 'risk_type', width: 15 },
+            { header: 'ขั้นตอน', key: 'process_type', width: 20 },
+            { header: 'รายการความเสี่ยง', key: 'risk_items', width: 40 },
+            { header: 'รายการอื่นๆ', key: 'other_risk_item', width: 20 },
+            { header: 'ระดับ', key: 'impact_level', width: 10 },
+            { header: 'กลุ่ม', key: 'group_type', width: 15 },
+            { header: 'ผู้รับผิดชอบ', key: 'responsible_person', width: 20 },
+            { header: 'หน่วยงาน', key: 'causing_department', width: 20 },
+            { header: 'รายละเอียด', key: 'incident_details', width: 50 },
+            { header: 'การแก้ไขเบื้องต้น', key: 'initial_response', width: 50 },
+            { header: 'แนวทางปฏิบัติ', key: 'guideline', width: 50 },
+          ];
+
+          filteredData.forEach((incident, index) => {
+            worksheet.addRow({
+              id: index + 1,
+              incident_date: dayjs(incident.incident_date).format('DD/MM/YYYY'),
+              risk_type: incident.risk_type,
+              process_type: incident.process_type || '-',
+              risk_items: incident.risk_items?.join(', ') || '-',
+              other_risk_item: incident.other_risk_item || '-',
+              impact_level: incident.impact_level,
+              group_type: incident.group_type,
+              responsible_person: incident.responsible_person || '-',
+              causing_department: incident.causing_department || '-',
+              incident_details: incident.incident_details,
+              initial_response: incident.initial_response,
+              guideline: incident.guideline,
+            });
+          });
+
+          worksheet.getRow(1).font = { bold: true };
+          worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+          const buffer = await workbook.xlsx.writeBuffer();
+          const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+          saveAs(blob, `Incidents_Export_${dayjs().format('YYYYMMDD_HHmmss')}.xlsx`);
+
+          Swal.fire({
+            title: 'ดึงข้อมูลสำเร็จ',
+            text: 'ส่งออกข้อมูลเรียบร้อยแล้ว',
+            icon: 'success',
+            confirmButtonColor: '#800000',
+            timer: 1500
+          });
+        } catch (error: any) {
+          console.error('Export error:', error);
+          Swal.fire({
+            title: 'เกิดข้อผิดพลาด',
+            text: 'ไม่สามารถส่งออกข้อมูลได้',
+            icon: 'error',
+            confirmButtonColor: '#ef4444'
+          });
+        } finally {
+          setIsExporting(false);
+        }
+      } else {
+        Swal.fire({
+          title: 'รหัสผ่านไม่ถูกต้อง',
+          icon: 'error',
+          confirmButtonColor: '#ef4444'
+        });
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
@@ -300,10 +397,20 @@ export default function DataTable() {
             </h2>
             <p className="text-maroon-100 mt-1 opacity-90">รายการอุบัติการณ์ความเสี่ยงทั้งหมด</p>
           </div>
-          <div className="bg-white/20 px-4 py-2 rounded-xl backdrop-blur-sm border border-white/10">
-            <span className="text-sm font-medium">รวมทั้งหมด:</span>
-            <span className="ml-2 text-xl font-bold">{filteredData.length}</span>
-            <span className="ml-1 text-sm">รายการ</span>
+          <div className="flex gap-4 items-center">
+            <button
+              onClick={handleExportExcel}
+              disabled={isExporting || filteredData.length === 0}
+              className="bg-white text-maroon-700 hover:bg-maroon-50 px-4 py-2 rounded-xl transition-colors font-medium flex items-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isExporting ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-file-excel"></i>}
+              Export to Excel
+            </button>
+            <div className="bg-white/20 px-4 py-2 rounded-xl backdrop-blur-sm border border-white/10 hidden sm:block">
+              <span className="text-sm font-medium">รวมทั้งหมด:</span>
+              <span className="ml-2 text-xl font-bold">{filteredData.length}</span>
+              <span className="ml-1 text-sm">รายการ</span>
+            </div>
           </div>
         </div>
 
