@@ -220,6 +220,21 @@ export default function ChartDashboard() {
       .map(([name, value]) => ({ name, value }));
   }, [filteredData]);
 
+  // 6. Impact Level Heatmap
+  const impactLevelData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    filteredData.forEach(d => {
+      const level = (d.impact_level || '').trim();
+      if (level) {
+        counts[level] = (counts[level] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [filteredData]);
+
+  // Determine max count for heatmap intensity
+  const maxImpactCount = Math.max(...(Object.values(impactLevelData) as number[]), 1);
+
   // KPI Counts
   const clinicCount = filteredData.filter(d => d.risk_type === 'Clinic').length;
   const nonClinicCount = filteredData.filter(d => d.risk_type === 'Non-clinic').length;
@@ -608,13 +623,13 @@ export default function ChartDashboard() {
               <i className="fa-solid fa-medal"></i>
             </div>
           </div>
-          <div className="min-h-[250px] w-full">
+          <div className="h-[250px] w-full">
             {topReporters.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={topReporters} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <BarChart data={topReporters} layout="vertical" margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
                   <XAxis type="number" hide />
-                  <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} width={80} />
+                  <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} width={100} />
                   <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: '#f1f5f9' }} />
                   <Bar dataKey="value" fill="#800000" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fill: '#64748b', fontSize: 12, fontWeight: 'bold' }} />
                 </BarChart>
@@ -639,13 +654,13 @@ export default function ChartDashboard() {
               <i className="fa-solid fa-building-circle-exclamation"></i>
             </div>
           </div>
-          <div className="min-h-[250px] w-full">
+          <div className="h-[250px] w-full">
             {topDepartments.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={topDepartments} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <BarChart data={topDepartments} layout="vertical" margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
                   <XAxis type="number" hide />
-                  <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} width={80} />
+                  <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} width={100} />
                   <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: '#f1f5f9' }} />
                   <Bar dataKey="value" fill="#800000" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fill: '#64748b', fontSize: 12, fontWeight: 'bold' }} />
                 </BarChart>
@@ -653,6 +668,84 @@ export default function ChartDashboard() {
             ) : (
               <div className="h-full flex items-center justify-center text-slate-400">ไม่มีข้อมูล</div>
             )}
+          </div>
+        </motion.div>
+
+        {/* Impact Level Heatmap */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.58 }} 
+          className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 lg:col-span-1"
+        >
+          <div className="mb-6 flex justify-between items-center">
+            <div>
+              <h3 className="text-lg font-bold text-slate-800">ระดับความรุนแรง (Heat map)</h3>
+              <p className="text-xs text-slate-500 mt-1">Impact Level ความเสี่ยงสูงสุด</p>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-maroon-50 text-maroon-600 flex items-center justify-center">
+              <i className="fa-solid fa-temperature-full"></i>
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Clinic (A-I)</p>
+              <div className="grid grid-cols-5 gap-2">
+                {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'].map(level => {
+                  const count = impactLevelData[level] || 0;
+                  const intensity = count > 0 ? 0.2 + (count / maxImpactCount) * 0.8 : 0;
+                  return (
+                    <div 
+                      key={level} 
+                      className="relative h-14 rounded-xl flex items-center justify-center border border-slate-100 overflow-hidden group cursor-pointer"
+                      title={`${level}: ${count} ครั้ง`}
+                    >
+                      <div 
+                        className="absolute inset-0 bg-maroon-600 transition-opacity" 
+                        style={{ opacity: intensity }}
+                      ></div>
+                      <div className="relative z-10 flex flex-col items-center justify-center leading-none gap-0.5">
+                        <span className={cn("font-bold text-lg", count > 0 ? (intensity > 0.5 ? "text-white" : "text-maroon-900") : "text-slate-400")}>
+                          {level}
+                        </span>
+                        <span className={cn("text-[11px] font-semibold", count > 0 ? (intensity > 0.5 ? "text-maroon-100" : "text-maroon-700") : "text-slate-300")}>
+                          {count} ครั้ง
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 mt-4">Non-clinic (0-4)</p>
+              <div className="grid grid-cols-5 gap-2">
+                {['0', '1', '2', '3', '4'].map(level => {
+                  const count = impactLevelData[level] || 0;
+                  const intensity = count > 0 ? 0.2 + (count / maxImpactCount) * 0.8 : 0;
+                  return (
+                    <div 
+                      key={level} 
+                      className="relative h-14 rounded-xl flex items-center justify-center border border-slate-100 overflow-hidden group cursor-pointer"
+                      title={`${level}: ${count} ครั้ง`}
+                    >
+                      <div 
+                        className="absolute inset-0 bg-teal-600 transition-opacity" 
+                        style={{ opacity: intensity }}
+                      ></div>
+                      <div className="relative z-10 flex flex-col items-center justify-center leading-none gap-0.5">
+                        <span className={cn("font-bold text-lg", count > 0 ? (intensity > 0.5 ? "text-white" : "text-teal-900") : "text-slate-400")}>
+                          {level}
+                        </span>
+                        <span className={cn("text-[11px] font-semibold", count > 0 ? (intensity > 0.5 ? "text-teal-100" : "text-teal-700") : "text-slate-300")}>
+                          {count} ครั้ง
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </motion.div>
 
@@ -831,7 +924,7 @@ export default function ChartDashboard() {
                     className={cn(
                       "w-8 h-8 rounded-lg text-sm font-medium transition-colors",
                       currentPage === page 
-                        ? "bg-blue-600 text-white" 
+                        ? "bg-maroon-600 text-white" 
                         : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
                     )}
                   >
