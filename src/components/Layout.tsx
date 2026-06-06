@@ -114,49 +114,59 @@ export default function Layout({ children }: { children: ReactNode }) {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Header (Mobile & Pinned) */}
-        <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 z-10 sticky top-0 shadow-sm">
+        {/* Header (Top Navbar) */}
+        <header className="h-20 bg-white/80 backdrop-blur-xl border-b border-slate-200/50 flex items-center justify-between px-4 lg:px-8 z-10 sticky top-0 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative">
+          {/* Subtle gradient line at top */}
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-maroon-300 to-transparent opacity-50"></div>
+          
           <div className="flex items-center gap-3 md:hidden">
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-600"
+              className="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-600 transition-colors"
               aria-label="Open Menu"
             >
-              <i className="fa-solid fa-bars"></i>
+              <i className="fa-solid fa-bars text-lg"></i>
             </button>
             <div className="font-bold text-slate-800 flex items-center gap-2 tracking-tight">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-maroon-700 to-maroon-900 flex items-center justify-center text-white shadow-md">
-                <i className="fa-solid fa-microscope"></i>
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-maroon-600 to-maroon-900 flex items-center justify-center text-white shadow-lg shadow-maroon-900/20">
+                <i className="fa-solid fa-microscope text-sm"></i>
               </div>
-              Lab Incident
+              <span className="text-lg bg-clip-text text-transparent bg-gradient-to-r from-slate-800 to-slate-500">Lab Incident</span>
             </div>
           </div>
           
-          <div className="hidden md:flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-slate-500">
-              <i className="fa-solid fa-location-dot text-maroon-600"></i>
+          <div className="hidden md:flex items-center gap-6">
+            <div className="flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-slate-50 to-white rounded-full border border-slate-100 shadow-sm text-sm font-medium text-slate-600">
+              <div className="w-6 h-6 rounded-full bg-maroon-50 text-maroon-600 flex items-center justify-center">
+                <i className="fa-solid fa-location-dot text-xs"></i>
+              </div>
               ระบบบันทึกอุบัติการณ์ความเสี่ยง
             </div>
-            <div className="h-4 w-px bg-slate-300"></div>
+            
+            <div className="h-6 w-px bg-slate-200"></div>
+            
             <Link 
               to="/report"
-              className="flex items-center gap-2 text-sm font-medium text-maroon-700 hover:text-maroon-800 hover:bg-maroon-50 px-3 py-1.5 rounded-lg transition-colors"
+              className="group flex items-center gap-2 text-sm font-medium text-white bg-gradient-to-r from-maroon-600 to-maroon-800 px-5 py-2.5 rounded-full hover:from-maroon-700 hover:to-maroon-900 transition-all shadow-[0_4px_14px_0_rgba(153,27,27,0.39)] hover:shadow-[0_6px_20px_rgba(153,27,27,0.23)] hover:-translate-y-[1px]"
             >
-              <i className="fa-solid fa-plus"></i>
+              <i className="fa-solid fa-plus group-hover:rotate-90 transition-transform duration-300"></i>
               บันทึกใหม่
             </Link>
             <button 
               onClick={() => setIsGuideOpen(true)}
-              className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-maroon-700 hover:bg-maroon-50 px-3 py-1.5 rounded-lg transition-colors"
+              className="group flex items-center gap-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 px-5 py-2.5 rounded-full hover:bg-slate-50 transition-all shadow-sm hover:shadow-md hover:-translate-y-[1px]"
             >
-              <i className="fa-solid fa-book-open"></i>
+              <i className="fa-solid fa-book-open text-slate-400 group-hover:text-maroon-600 transition-colors"></i>
               คู่มือการใช้งาน
             </button>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-xs font-medium border border-green-200">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+          <div className="flex items-center gap-4">
+            <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white rounded-full text-xs font-semibold text-slate-600 border border-slate-100 shadow-sm">
+              <div className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+              </div>
               ระบบพร้อมใช้งาน
             </div>
           </div>
@@ -232,33 +242,82 @@ export default function Layout({ children }: { children: ReactNode }) {
         </AnimatePresence>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
-          <div className="max-w-5xl mx-auto">
-            {children}
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8 bg-slate-50">
+          <div className="max-w-5xl mx-auto min-h-full flex flex-col">
+            <div className="flex-1">
+              {children}
+            </div>
+            
+            {/* Footer */}
+            <footer className="mt-12 py-8 flex flex-col md:flex-row items-center justify-between text-sm text-slate-500 gap-4 border-t border-slate-200/60">
+              <div className="flex flex-col items-center md:items-start gap-1">
+                <div className="flex items-center gap-2 font-semibold text-slate-700">
+                  <i className="fa-solid fa-shield-halved text-maroon-600"></i>
+                  <span>ระบบบริหารความเสี่ยง (Risk Management)</span>
+                </div>
+                <span className="text-xs font-medium">กลุ่มงานเทคนิคการแพทย์ โรงพยาบาลกงหรา</span>
+              </div>
+              
+              <div className="flex flex-col items-center md:items-end gap-1 font-medium">
+                <div className="flex items-center gap-2">
+                  <i className="fa-solid fa-code text-slate-400"></i>
+                  <span>พัฒนาโดย อรรฆพร ศรีปานรอด นักวิชาการคอมพิวเตอร์ปฏิบัติการ</span>
+                </div>
+                <a href="https://www.facebook.com/Mootu00" className="text-xs text-maroon-600 hover:text-maroon-800 transition-colors flex items-center gap-1">
+                  <i className="fa-solid fa-headset"></i>
+                  ติดต่อผู้ดูแลระบบ (IT Support)
+                </a>
+              </div>
+            </footer>
           </div>
         </main>
 
-        {/* Footer */}
-        <footer className="bg-slate-50 border-t border-slate-200 py-6 px-6 flex flex-col md:flex-row items-center justify-between text-sm text-slate-500 z-10 gap-4">
-          <div className="flex flex-col items-center md:items-start gap-1">
-            <div className="flex items-center gap-2 font-medium text-slate-700">
-              <i className="fa-solid fa-shield-halved text-maroon-600"></i>
-              <span>ระบบบริหารความเสี่ยง (Risk Management)</span>
+        {/* Mobile Bottom Navigation */}
+        <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white/90 backdrop-blur-md border-t border-slate-200 z-40 safe-area-pb shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+          <div className="flex justify-between items-center h-[4.5rem] px-2 relative">
+            <Link 
+              to="/" 
+              className={cn("flex flex-col items-center justify-center w-full relative h-full", location.pathname === '/' ? "text-maroon-700" : "text-slate-400 hover:text-slate-600")}
+            >
+              <i className="fa-solid fa-house text-xl mb-1 drop-shadow-sm"></i>
+              <span className="text-[10px] font-bold tracking-wide">หน้าแรก</span>
+            </Link>
+            
+            <Link 
+              to="/dashboard" 
+              className={cn("flex flex-col items-center justify-center w-full relative h-full", location.pathname === '/dashboard' || location.pathname === '/charts' ? "text-maroon-700" : "text-slate-400 hover:text-slate-600")}
+            >
+              <i className="fa-solid fa-chart-pie text-xl mb-1 drop-shadow-sm"></i>
+              <span className="text-[10px] font-bold tracking-wide">แดชบอร์ด</span>
+            </Link>
+            
+            {/* Center Prominent Button */}
+            <div className="w-full flex justify-center mt-[-40px]">
+              <Link 
+                to="/report" 
+                className="group relative flex items-center justify-center w-16 h-16 bg-gradient-to-br from-maroon-600 to-maroon-800 text-white rounded-full shadow-lg shadow-maroon-900/20 border-[6px] border-[#f8fafc] hover:scale-105 active:scale-95 transition-all duration-300"
+              >
+                <i className="fa-solid fa-plus text-2xl group-hover:rotate-90 transition-transform duration-300"></i>
+              </Link>
             </div>
-            <span className="text-xs">กลุ่มงานเทคนิคการแพทย์ โรงพยาบาลกงหรา</span>
+
+            <Link 
+              to="/data" 
+              className={cn("flex flex-col items-center justify-center w-full relative h-full", location.pathname === '/data' ? "text-maroon-700" : "text-slate-400 hover:text-slate-600")}
+            >
+              <i className="fa-solid fa-table-list text-xl mb-1 drop-shadow-sm"></i>
+              <span className="text-[10px] font-bold tracking-wide">ตาราง</span>
+            </Link>
+            
+            <button 
+              onClick={() => setIsMobileMenuOpen(true)} 
+              className="flex flex-col items-center justify-center w-full text-slate-400 hover:text-slate-600 relative h-full"
+            >
+              <i className="fa-solid fa-bars text-xl mb-1 drop-shadow-sm"></i>
+              <span className="text-[10px] font-bold tracking-wide">เมนู</span>
+            </button>
           </div>
-          
-          <div className="flex flex-col items-center md:items-end gap-1">
-            <div className="flex items-center gap-2 font-medium">
-              <i className="fa-solid fa-code text-slate-400"></i>
-              <span>พัฒนาโดย อรรฆพร ศรีปานรอด นวก.คอม</span>
-            </div>
-            <a href="https://www.facebook.com/Mootu00" className="text-xs text-maroon-600 hover:underline flex items-center gap-1">
-              <i className="fa-solid fa-headset"></i>
-              ติดต่อผู้ดูแลระบบ (IT Support)
-            </a>
-          </div>
-        </footer>
+        </nav>
 
         {/* User Guide Modal */}
         <AnimatePresence>
