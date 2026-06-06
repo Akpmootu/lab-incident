@@ -29,6 +29,7 @@ export default function DataTable() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterYear, setFilterYear] = useState<string>('all');
+  const [filterMonth, setFilterMonth] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterImpact, setFilterImpact] = useState<string>('all');
   const [filterPerson, setFilterPerson] = useState<string>('all');
@@ -84,13 +85,14 @@ export default function DataTable() {
         (inc.risk_items?.join(', ')?.toLowerCase() || '').includes(searchTerm.toLowerCase());
       
       const matchYear = filterYear === 'all' || dayjs(inc.incident_date).format('YYYY') === filterYear;
+      const matchMonth = filterMonth === 'all' || dayjs(inc.incident_date).format('MM') === filterMonth;
       const matchType = filterType === 'all' || inc.risk_type === filterType;
       const matchImpact = filterImpact === 'all' || inc.impact_level === filterImpact;
       const matchPerson = filterPerson === 'all' || inc.responsible_person === filterPerson;
 
-      return matchSearch && matchYear && matchType && matchImpact && matchPerson;
+      return matchSearch && matchYear && matchMonth && matchType && matchImpact && matchPerson;
     });
-  }, [incidents, searchTerm, filterYear, filterType, filterImpact, filterPerson]);
+  }, [incidents, searchTerm, filterYear, filterMonth, filterType, filterImpact, filterPerson]);
 
   const handleViewDetails = (incident: Incident) => {
     const detailsHtml = `
@@ -416,7 +418,7 @@ export default function DataTable() {
 
         <div className="p-6">
           {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
             <div className="relative">
               <i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
               <input
@@ -437,6 +439,26 @@ export default function DataTable() {
               {years.map(year => (
                 <option key={year} value={year}>ปี พ.ศ. {Number(year) + 543}</option>
               ))}
+            </select>
+
+            <select
+              value={filterMonth}
+              onChange={(e) => setFilterMonth(e.target.value)}
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-maroon-500 focus:ring-1 focus:ring-maroon-500 transition-all text-sm appearance-none font-medium"
+            >
+              <option value="all">ทุกเดือน</option>
+              <option value="01">มกราคม</option>
+              <option value="02">กุมภาพันธ์</option>
+              <option value="03">มีนาคม</option>
+              <option value="04">เมษายน</option>
+              <option value="05">พฤษภาคม</option>
+              <option value="06">มิถุนายน</option>
+              <option value="07">กรกฎาคม</option>
+              <option value="08">สิงหาคม</option>
+              <option value="09">กันยายน</option>
+              <option value="10">ตุลาคม</option>
+              <option value="11">พฤศจิกายน</option>
+              <option value="12">ธันวาคม</option>
             </select>
 
             <select

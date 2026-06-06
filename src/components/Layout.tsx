@@ -261,7 +261,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               <div className="flex flex-col items-center md:items-end gap-1 font-medium">
                 <div className="flex items-center gap-2">
                   <i className="fa-solid fa-code text-slate-400"></i>
-                  <span>พัฒนาโดย อรรฆพร ศรีปานรอด นักวิชาการคอมพิวเตอร์ปฏิบัติการ</span>
+                  <span>พัฒนาโดย อรรฆพร ศรีปานรอด นักวิชาการคอมพิวเตอร์ปฏิบัติการ | v1.3.0</span>
                 </div>
                 <a href="https://www.facebook.com/Mootu00" className="text-xs text-maroon-600 hover:text-maroon-800 transition-colors flex items-center gap-1">
                   <i className="fa-solid fa-headset"></i>
