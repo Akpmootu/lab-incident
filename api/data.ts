@@ -32,10 +32,21 @@ function parseCredentials(raw: string) {
   return credentials;
 }
 
+function getCredentials() {
+  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+  const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY;
+  if (email && privateKey) {
+    return { client_email: email, private_key: privateKey.replace(/\\n/g, '\n').trim(), project_id: 'today-prayer-app' };
+  }
+  if (raw) return parseCredentials(raw);
+  throw configError();
+}
+
 async function sheetsRequest(path: string, init: RequestInit = {}) {
   const credentials = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-  if (!SHEET_ID || !credentials) throw configError();
-  const auth = new GoogleAuth({ credentials: parseCredentials(credentials), scopes: ['https://www.googleapis.com/auth/spreadsheets'] });
+  if (!SHEET_ID || (!credentials && !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL)) throw configError();
+  const auth = new GoogleAuth({ credentials: getCredentials(), scopes: ['https://www.googleapis.com/auth/spreadsheets'] });
   const client = await auth.getClient();
   const token = await client.getAccessToken();
   const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}${path}`, {
