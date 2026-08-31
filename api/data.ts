@@ -14,9 +14,11 @@ function configError() {
 }
 
 function parseCredentials(raw: string) {
-  const credentials = JSON.parse(raw);
+  let credentials: any = JSON.parse(raw);
+  if (typeof credentials === 'string') credentials = JSON.parse(credentials);
   if (typeof credentials.private_key === 'string') {
     const key = credentials.private_key
+      .replace(/\\u([0-9a-f]{4})/gi, (_, code) => String.fromCharCode(parseInt(code, 16)))
       .replace(/\\+n/g, '\n')
       .replace(/\\+r/g, '')
       .replace(/\r/g, '')
