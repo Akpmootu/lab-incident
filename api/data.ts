@@ -13,10 +13,18 @@ function configError() {
   return new Error('Google Sheets is not configured. Set GOOGLE_SHEET_ID and GOOGLE_SERVICE_ACCOUNT_JSON.');
 }
 
+function parseCredentials(raw: string) {
+  const credentials = JSON.parse(raw);
+  if (typeof credentials.private_key === 'string') {
+    credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
+  }
+  return credentials;
+}
+
 async function sheetsRequest(path: string, init: RequestInit = {}) {
   const credentials = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
   if (!SHEET_ID || !credentials) throw configError();
-  const auth = new GoogleAuth({ credentials: JSON.parse(credentials), scopes: ['https://www.googleapis.com/auth/spreadsheets'] });
+  const auth = new GoogleAuth({ credentials: parseCredentials(credentials), scopes: ['https://www.googleapis.com/auth/spreadsheets'] });
   const client = await auth.getClient();
   const token = await client.getAccessToken();
   const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}${path}`, {
