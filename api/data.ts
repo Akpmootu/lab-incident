@@ -16,7 +16,16 @@ function configError() {
 function parseCredentials(raw: string) {
   const credentials = JSON.parse(raw);
   if (typeof credentials.private_key === 'string') {
-    credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
+    const key = credentials.private_key
+      .replace(/\\+n/g, '\n')
+      .replace(/\\+r/g, '')
+      .replace(/\r/g, '')
+      .trim();
+    const body = key
+      .replace('-----BEGIN PRIVATE KEY-----', '')
+      .replace('-----END PRIVATE KEY-----', '')
+      .replace(/\s+/g, '');
+    credentials.private_key = `-----BEGIN PRIVATE KEY-----\n${body.match(/.{1,64}/g)?.join('\n') || body}\n-----END PRIVATE KEY-----\n`;
   }
   return credentials;
 }
