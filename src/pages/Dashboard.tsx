@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { supabase } from "../lib/supabase";
+import { fetchIncidents as fetchIncidentsFromSheet } from "../lib/dataApi";
 import {
   LineChart,
   Line,
@@ -34,21 +34,13 @@ export default function Dashboard() {
   const fetchIncidents = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("incidents")
-        .select("*")
-        .order("incident_date", { ascending: true });
-
-      if (error) throw error;
+      const data = await fetchIncidentsFromSheet();
       setIncidents(data || []);
     } catch (error: any) {
       console.error("Error fetching data:", error);
       Swal.fire("ข้อผิดพลาด", "ไม่สามารถโหลดข้อมูลได้", "error");
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
-
   // --- Data Processing ---
   // Filter by year (and month if monthly view)
   const filteredData = incidents.filter((inc) => {

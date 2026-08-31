@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '../lib/supabase';
+import { fetchIncidents as fetchIncidentsFromSheet } from '../lib/dataApi';
+import Swal from 'sweetalert2';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
@@ -49,24 +50,12 @@ export default function ChartDashboard() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const { data: incidents, error } = await supabase
-        .from('incidents')
-        .select('*')
-        .order('incident_date', { ascending: false });
-
-      if (error) throw error;
-      setData(incidents || []);
-      
-      // Set default year to latest available if data exists
-      if (incidents && incidents.length > 0) {
-        const latestYear = Math.max(...incidents.map(d => getFiscalYear(d.incident_date)));
-        setSelectedYear(latestYear.toString());
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
-    }
+      const data = await fetchIncidentsFromSheet();
+      setData(data || []);
+    } catch (error: any) {
+      console.error("Error fetching data:", error);
+      Swal.fire("ข้อผิดพลาด", "ไม่สามารถโหลดข้อมูลได้", "error");
+    } finally { setLoading(false); }
   };
 
   // Filter Options

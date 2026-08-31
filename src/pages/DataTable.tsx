@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '../lib/supabase';
+import { fetchIncidents, updateIncident, deleteIncident } from '../lib/dataApi';
 import { cn } from '../lib/utils';
 import { formatDateTH } from '../lib/dateUtils';
 import dayjs from 'dayjs';
@@ -41,32 +41,19 @@ export default function DataTable() {
   const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
-    fetchIncidents();
+    loadIncidents();
   }, []);
 
-  const fetchIncidents = async () => {
+  const loadIncidents = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('incidents')
-        .select('*')
-        .order('incident_date', { ascending: false });
-
-      if (error) throw error;
+      const data = await fetchIncidents();
       setIncidents(data || []);
     } catch (error: any) {
       console.error('Error fetching incidents:', error);
-      Swal.fire({
-        title: 'เกิดข้อผิดพลาด',
-        text: 'ไม่สามารถโหลดข้อมูลได้',
-        icon: 'error',
-        confirmButtonColor: '#ef4444'
-      });
-    } finally {
-      setLoading(false);
-    }
+      Swal.fire({ title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถโหลดข้อมูลได้', icon: 'error', confirmButtonColor: '#ef4444' });
+    } finally { setLoading(false); }
   };
-
   const years = useMemo(() => {
     const uniqueYears = new Set(incidents.map(inc => dayjs(inc.incident_date).format('YYYY')));
     return Array.from(uniqueYears).sort((a, b) => Number(b) - Number(a));
@@ -191,29 +178,9 @@ export default function DataTable() {
       });
 
       // Update incident
-      const { error: updateError } = await supabase
-        .from('incidents')
-        .update(editData)
-        .eq('id', editingId);
+      await updateIncident(editingId, editData);
 
-      if (updateError) throw updateError;
 
-      // Log edit history if there are changes
-      if (Object.keys(changes).length > 0) {
-        const { error: historyError } = await supabase
-          .from('incident_edit_history')
-          .insert([{
-            incident_id: editingId,
-            edited_by: 'Admin', // In a real app, this would be the logged-in user
-            changes: changes
-          }]);
-        
-        if (historyError) {
-          console.error('Error logging edit history:', historyError);
-          // We don't throw here to avoid failing the whole save if just history fails,
-          // but in a strict system you might want to.
-        }
-      }
 
       Swal.fire({
         title: 'บันทึกสำเร็จ',
@@ -224,7 +191,7 @@ export default function DataTable() {
       });
 
       setEditingId(null);
-      fetchIncidents();
+      loadIncidents();
     } catch (error: any) {
       console.error('Error updating incident:', error);
       Swal.fire({
@@ -259,12 +226,7 @@ export default function DataTable() {
     if (password) {
       if (password === 'lab11414') {
         try {
-          const { error } = await supabase
-            .from('incidents')
-            .delete()
-            .eq('id', id);
-
-          if (error) throw error;
+          await deleteIncident(id);
 
           Swal.fire({
             title: 'ลบสำเร็จ',
@@ -274,7 +236,7 @@ export default function DataTable() {
             timer: 1500
           });
 
-          fetchIncidents();
+          loadIncidents();
         } catch (error: any) {
           console.error('Error deleting incident:', error);
           Swal.fire({

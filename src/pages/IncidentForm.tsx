@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Swal from "sweetalert2";
-import { supabase } from "../lib/supabase";
+import { createIncident, fetchIncidentPopularity } from "../lib/dataApi";
 import { cn } from "../lib/utils";
 
 const RISK_TYPES = [
@@ -119,26 +119,7 @@ export default function IncidentForm() {
 
   const fetchRiskItemPopularity = async () => {
     try {
-      const { data, error } = await supabase
-        .from("incidents")
-        .select("risk_items, responsible_person, causing_department");
-      if (error) throw error;
-
-      const counts: Record<string, number> = {};
-      const pCounts: Record<string, number> = {};
-      const dCounts: Record<string, number> = {};
-      
-      data?.forEach((inc) => {
-        inc.risk_items?.forEach((item: string) => {
-          counts[item] = (counts[item] || 0) + 1;
-        });
-        if (inc.responsible_person) {
-          pCounts[inc.responsible_person] = (pCounts[inc.responsible_person] || 0) + 1;
-        }
-        if (inc.causing_department) {
-          dCounts[inc.causing_department] = (dCounts[inc.causing_department] || 0) + 1;
-        }
-      });
+      const { counts, pCounts, dCounts } = await fetchIncidentPopularity();
       setRiskItemPopularity(counts);
       setPersonCounts(pCounts);
       setDeptCounts(dCounts);
@@ -146,7 +127,6 @@ export default function IncidentForm() {
       console.error("Error fetching popularity:", err);
     }
   };
-
   const handleInputChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
@@ -221,25 +201,21 @@ export default function IncidentForm() {
 
     setIsSubmitting(true);
     try {
-      // 1. Save to Supabase
-      const { error } = await supabase.from("incidents").insert([
-        {
-          incident_date: formData.incident_date,
-          risk_type: formData.risk_type,
-          process_type: formData.process_type || null,
-          risk_items: formData.risk_items,
-          other_risk_item: formData.other_risk_item,
-          incident_details: formData.incident_details,
-          initial_response: formData.initial_response,
-          impact_level: formData.impact_level,
-          group_type: formData.group_type,
-          guideline: formData.guideline,
-          responsible_person: formData.responsible_person,
-          causing_department: formData.causing_department,
-        },
-      ]);
-
-      if (error) throw error;
+      // 1. Save to Google Sheets through the server API
+      await createIncident({
+        incident_date: formData.incident_date,
+        risk_type: formData.risk_type,
+        process_type: formData.process_type || null,
+        risk_items: formData.risk_items,
+        other_risk_item: formData.other_risk_item,
+        incident_details: formData.incident_details,
+        initial_response: formData.initial_response,
+        impact_level: formData.impact_level,
+        group_type: formData.group_type,
+        guideline: formData.guideline,
+        responsible_person: formData.responsible_person,
+        causing_department: formData.causing_department,
+      });
 
       // 2. Send Telegram Notification via Backend
       const message = `
