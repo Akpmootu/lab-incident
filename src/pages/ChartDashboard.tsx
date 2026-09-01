@@ -7,6 +7,7 @@ import {
   PieChart, Pie, Cell, Legend
 } from 'recharts';
 import { cn } from '../lib/utils';
+import { PageSkeleton } from '../components/Skeleton';
 
 const COLORS = ['#800000', '#991b1b', '#b91c1c', '#dc2626', '#ef4444', '#f87171', '#fca5a5'];
 
@@ -231,6 +232,7 @@ export default function ChartDashboard() {
   const analyticalCount = filteredData.filter(d => d.process_type === 'Analytical').length;
   const postCount = filteredData.filter(d => d.process_type === 'Post-analytical').length;
   const uniqueReporters = new Set(filteredData.map(d => d.responsible_person).filter(Boolean)).size;
+  const nearMissRate = totalIncidents ? (filteredData.filter(d => d.group_type === 'Near Miss').length / totalIncidents) * 100 : 0;
 
   // 2. Proportion (Donut Chart)
   const proportionData = useMemo(() => {
@@ -261,15 +263,11 @@ export default function ChartDashboard() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon-600"></div>
-      </div>
-    );
+    return <PageSkeleton label="กำลังโหลด executive dashboard" />;
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="bento-dashboard space-y-6 max-w-7xl mx-auto">
       {/* Header & Filters */}
       <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
@@ -430,6 +428,7 @@ export default function ChartDashboard() {
             <h3 className="text-3xl font-bold text-slate-800">{uniqueReporters}</h3>
             <span className="text-slate-500 mb-1 text-sm font-medium">คน</span>
           </div>
+          <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3 text-xs"><span className="text-slate-400">สัดส่วน Near Miss</span><span className="font-bold text-maroon-700">{nearMissRate.toFixed(1)}%</span></div>
         </motion.div>
       </div>
 

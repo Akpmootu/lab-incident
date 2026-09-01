@@ -30,6 +30,13 @@ export async function fetchIncidents(): Promise<IncidentRecord[]> {
   return result.data || [];
 }
 
+export interface AuditEvent { id: string; incident_id: string; edited_at: string; edited_by: string; changes: Record<string, { old: unknown; new: unknown }> }
+
+export async function fetchAuditLog(): Promise<AuditEvent[]> {
+  const result = await request<{ data: AuditEvent[] }>({}, '?view=history');
+  return result.data || [];
+}
+
 export async function createIncident(data: Omit<IncidentRecord, 'id' | 'created_at'>) {
   const result = await request<{ data: IncidentRecord }>({ method: 'POST', body: JSON.stringify(data) });
   return result.data;

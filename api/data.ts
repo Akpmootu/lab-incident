@@ -99,6 +99,10 @@ async function clearRange(range: string) {
 export default async function handler(req: any, res: any) {
   try {
     if (req.method === 'GET') {
+      if (req.query?.view === 'history') {
+        const result = await getValues(HISTORY_RANGE);
+        return res.status(200).json({ data: rowsToObjects(result.values, HISTORY_HEADERS) });
+      }
       const result = await getValues(INCIDENT_RANGE);
       return res.status(200).json({ data: rowsToObjects(result.values, INCIDENT_HEADERS) });
     }
@@ -107,6 +111,7 @@ export default async function handler(req: any, res: any) {
       const input = req.body || {};
       const incident = { ...input, id: input.id || randomUUID(), created_at: input.created_at || new Date().toISOString() };
       await appendRange(INCIDENT_RANGE, [objectToRow(incident, INCIDENT_HEADERS)]);
+      await appendRange(HISTORY_RANGE, [[randomUUID(), incident.id, new Date().toISOString(), 'System', JSON.stringify({ action: 'created' })]]);
       return res.status(201).json({ data: incident });
     }
 
@@ -135,6 +140,7 @@ export default async function handler(req: any, res: any) {
       const rowIndex = values.findIndex((row: any[], i: number) => i > 0 && row[0] === id);
       if (rowIndex < 1) return res.status(404).json({ error: 'Incident not found' });
       await clearRange(`Incidents!A${rowIndex + 1}:N${rowIndex + 1}`);
+      await appendRange(HISTORY_RANGE, [[randomUUID(), id, new Date().toISOString(), 'Admin', JSON.stringify({ action: 'deleted' })]]);
       return res.status(200).json({ success: true });
     }
 

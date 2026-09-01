@@ -231,7 +231,9 @@ export default function IncidentForm() {
 📝 <b>รายละเอียด:</b> ${formData.incident_details.substring(0, 100)}${formData.incident_details.length > 100 ? "..." : ""}
       `;
 
-      await fetch("/api/notify", {
+      const notificationSettings = JSON.parse(localStorage.getItem("lab-incident-notification-settings") || "{\"enabled\":true,\"notifyNearMiss\":true,\"notifyMiss\":true,\"notifyNoHarm\":false}");
+      const shouldNotify = notificationSettings.enabled && ((formData.group_type === "Near Miss" && notificationSettings.notifyNearMiss) || (formData.group_type === "Miss" && notificationSettings.notifyMiss) || (formData.group_type === "No Harm" && notificationSettings.notifyNoHarm));
+      if (shouldNotify) await fetch("/api/notify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message }),

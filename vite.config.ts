@@ -9,6 +9,8 @@ export default defineConfig(({mode}) => {
     plugins: [react(), tailwindcss()],
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+      'import.meta.env.VITE_DEPLOY_VERSION': JSON.stringify(process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || 'local'),
+      'import.meta.env.VITE_DEPLOY_REF': JSON.stringify(process.env.VERCEL_GIT_COMMIT_REF || 'local'),
     },
     resolve: {
       alias: {

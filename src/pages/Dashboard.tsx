@@ -13,6 +13,7 @@ import Swal from "sweetalert2";
 import html2canvas from "html2canvas";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
+import { PageSkeleton } from "../components/Skeleton";
 
 export default function Dashboard() {
   const [incidents, setIncidents] = useState<any[]>([]);
@@ -275,18 +276,11 @@ export default function Dashboard() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-maroon-600 flex flex-col items-center gap-3">
-          <i className="fa-solid fa-circle-notch fa-spin text-4xl"></i>
-          <p className="font-medium">กำลังโหลดข้อมูล...</p>
-        </div>
-      </div>
-    );
+    return <PageSkeleton label="กำลังโหลดสรุปข้อมูล" />;
   }
 
   return (
-    <div className="space-y-6">
+    <div className="bento-dashboard space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">

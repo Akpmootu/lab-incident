@@ -1,21 +1,23 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Layout from './components/Layout';
-import LandingPage from './pages/LandingPage';
-import IncidentForm from './pages/IncidentForm';
-import Dashboard from './pages/Dashboard';
-import ChartDashboard from './pages/ChartDashboard';
-import DataTable from './pages/DataTable';
+import { PageSkeleton } from './components/Skeleton';
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const IncidentForm = lazy(() => import('./pages/IncidentForm'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const ChartDashboard = lazy(() => import('./pages/ChartDashboard'));
+const DataTable = lazy(() => import('./pages/DataTable'));
+const AuditLog = lazy(() => import('./pages/AuditLog'));
+const NotificationSettings = lazy(() => import('./pages/NotificationSettings'));
 
 export default function App() {
   const [isAppLoading, setIsAppLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate initial loading for the professional feel
     const timer = setTimeout(() => {
       setIsAppLoading(false);
-    }, 1500);
+    }, 450);
     return () => clearTimeout(timer);
   }, []);
 
@@ -62,13 +64,17 @@ export default function App() {
 
       <Router>
         <Layout>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/report" element={<IncidentForm />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/charts" element={<ChartDashboard />} />
-            <Route path="/data" element={<DataTable />} />
-          </Routes>
+          <Suspense fallback={<PageSkeleton />}>
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/report" element={<IncidentForm />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/charts" element={<ChartDashboard />} />
+              <Route path="/data" element={<DataTable />} />
+              <Route path="/audit" element={<AuditLog />} />
+              <Route path="/settings/notifications" element={<NotificationSettings />} />
+            </Routes>
+          </Suspense>
         </Layout>
       </Router>
     </>
