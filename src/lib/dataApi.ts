@@ -13,12 +13,17 @@ export interface IncidentRecord {
   guideline: string;
   responsible_person: string | null;
   causing_department: string | null;
-  resolution_status?: 'Open' | 'In Progress' | 'Resolved' | 'Verified';
+  resolution_status?: 'Open' | 'In Progress' | 'Resolved' | 'Verified' | 'Reopened' | 'Cancelled';
+  assigned_at?: string | null;
+  in_progress_at?: string | null;
   resolved_at?: string | null;
   verified_at?: string | null;
   target_resolution_date?: string | null;
   verified_by?: string | null;
+  verified_role?: 'reporter' | 'owner' | 'reviewer' | 'admin' | null;
   status_reason?: string | null;
+  resolution_note?: string | null;
+  verification_note?: string | null;
 }
 
 async function request<T>(options: RequestInit = {}, query = ''): Promise<T> {

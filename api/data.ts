@@ -1,10 +1,10 @@
 import { GoogleAuth } from 'google-auth-library';
 import { randomUUID } from 'node:crypto';
 
-const INCIDENT_HEADERS = ['id', 'incident_date', 'risk_type', 'process_type', 'risk_items', 'other_risk_item', 'incident_details', 'initial_response', 'impact_level', 'group_type', 'guideline', 'created_at', 'causing_department', 'responsible_person', 'resolution_status', 'resolved_at', 'verified_at', 'target_resolution_date', 'verified_by', 'status_reason'] as const;
+const INCIDENT_HEADERS = ['id', 'incident_date', 'risk_type', 'process_type', 'risk_items', 'other_risk_item', 'incident_details', 'initial_response', 'impact_level', 'group_type', 'guideline', 'created_at', 'causing_department', 'responsible_person', 'resolution_status', 'assigned_at', 'in_progress_at', 'resolved_at', 'verified_at', 'target_resolution_date', 'verified_by', 'verified_role', 'status_reason', 'resolution_note', 'verification_note'] as const;
 const HISTORY_HEADERS = ['id', 'incident_id', 'edited_at', 'edited_by', 'changes'] as const;
 const SHEET_ID = process.env.GOOGLE_SHEET_ID;
-const INCIDENT_RANGE = 'Incidents!A:T';
+const INCIDENT_RANGE = 'Incidents!A:Y';
 const HISTORY_RANGE = "'Edit History'!A:E";
 const SETTINGS_RANGE = 'Settings!A:B';
 const DEFAULT_SETTINGS = { enabled: true, notifyNearMiss: true, notifyMiss: true, notifyNoHarm: false, dailyReminder: true };
@@ -90,7 +90,7 @@ async function ensureIncidentHeaders() {
   const result = await getValues(INCIDENT_RANGE);
   const header = result.values?.[0] || [];
   if (INCIDENT_HEADERS.some((key, index) => header[index] !== key)) {
-    await updateRange('Incidents!A1:T1', [Array.from(INCIDENT_HEADERS)]);
+    await updateRange('Incidents!A1:Y1', [Array.from(INCIDENT_HEADERS)]);
   }
   return result;
 }
@@ -145,7 +145,7 @@ export default async function handler(req: any, res: any) {
       const input = req.body || {};
       const createdAt = input.created_at || new Date().toISOString();
       const defaultTarget = new Date(createdAt); defaultTarget.setDate(defaultTarget.getDate() + 7);
-      const incident = { ...input, id: input.id || randomUUID(), created_at: createdAt, resolution_status: 'Open', resolved_at: null, verified_at: null, target_resolution_date: input.target_resolution_date || defaultTarget.toISOString().slice(0, 10), verified_by: null, status_reason: input.status_reason || 'เปิดประเด็นใหม่' };
+      const incident = { ...input, id: input.id || randomUUID(), created_at: createdAt, resolution_status: 'Open', assigned_at: input.responsible_person ? createdAt : null, in_progress_at: null, resolved_at: null, verified_at: null, target_resolution_date: input.target_resolution_date || defaultTarget.toISOString().slice(0, 10), verified_by: null, verified_role: null, status_reason: input.status_reason || 'เปิดประเด็นใหม่', resolution_note: input.resolution_note || null, verification_note: input.verification_note || null };
       await ensureIncidentHeaders();
       await appendRange(INCIDENT_RANGE, [objectToRow(incident, INCIDENT_HEADERS)]);
       await appendRange(HISTORY_RANGE, [[randomUUID(), incident.id, new Date().toISOString(), 'System', JSON.stringify({ action: 'created' })]]);
@@ -164,16 +164,20 @@ export default async function handler(req: any, res: any) {
       const previousStatus = original.resolution_status || 'Open';
       const order = ['Open', 'In Progress', 'Resolved', 'Verified'];
       if (requestedStatus && requestedStatus !== previousStatus) {
-        if (order.indexOf(requestedStatus) !== order.indexOf(previousStatus) + 1) return res.status(400).json({ error: 'Status must move one step at a time' });
+        if (requestedStatus === 'Reopened' || requestedStatus === 'Cancelled') { if (!['Resolved', 'Verified', 'In Progress'].includes(previousStatus)) return res.status(400).json({ error: 'This incident cannot be reopened or cancelled from its current status' }); }
+        else if (!order.includes(requestedStatus) || order.indexOf(requestedStatus) !== order.indexOf(previousStatus) + 1) return res.status(400).json({ error: 'Status must move one step at a time' });
         if (!req.body?.status_reason || String(req.body.status_reason).trim().length < 3) return res.status(400).json({ error: 'A reason is required when changing status' });
+        if (requestedStatus === 'Verified' && !['reviewer', 'admin'].includes(String(req.body.verified_role || '').toLowerCase())) return res.status(403).json({ error: 'Only an authenticated reviewer or administrator may verify an incident' });
       }
       const now = new Date().toISOString();
       const updated = { ...original, ...req.body };
+      if (requestedStatus === 'In Progress' && previousStatus !== 'In Progress') updated.in_progress_at = req.body.in_progress_at || now;
       if (requestedStatus === 'Resolved' && previousStatus !== 'Resolved') updated.resolved_at = req.body.resolved_at || now;
-      if (requestedStatus === 'Verified' && previousStatus !== 'Verified') { updated.verified_at = req.body.verified_at || now; updated.verified_by = req.body.verified_by || 'ผู้ตรวจสอบระบบ'; }
+      if (requestedStatus === 'Verified' && previousStatus !== 'Verified') { updated.verified_at = req.body.verified_at || now; updated.verified_by = req.body.verified_by; updated.verified_role = String(req.body.verified_role).toLowerCase(); }
+      if (requestedStatus === 'Reopened') { updated.resolved_at = null; updated.verified_at = null; updated.verified_by = null; updated.verified_role = null; }
       delete updated.id;
       updated.id = id;
-      await updateRange(`Incidents!A${rowIndex + 1}:T${rowIndex + 1}`, [objectToRow(updated, INCIDENT_HEADERS)]);
+      await updateRange(`Incidents!A${rowIndex + 1}:Y${rowIndex + 1}`, [objectToRow(updated, INCIDENT_HEADERS)]);
       const changes: Row = {};
       for (const key of INCIDENT_HEADERS) if (JSON.stringify(original[key]) !== JSON.stringify(updated[key])) changes[key] = { old: original[key], new: updated[key] };
       if (Object.keys(changes).length) await appendRange(HISTORY_RANGE, [[randomUUID(), id, new Date().toISOString(), 'Admin', JSON.stringify(changes)]]);
@@ -187,7 +191,7 @@ export default async function handler(req: any, res: any) {
       const values = current.values || [];
       const rowIndex = values.findIndex((row: any[], i: number) => i > 0 && row[0] === id);
       if (rowIndex < 1) return res.status(404).json({ error: 'Incident not found' });
-      await clearRange(`Incidents!A${rowIndex + 1}:T${rowIndex + 1}`);
+      await clearRange(`Incidents!A${rowIndex + 1}:Y${rowIndex + 1}`);
       await appendRange(HISTORY_RANGE, [[randomUUID(), id, new Date().toISOString(), 'Admin', JSON.stringify({ action: 'deleted' })]]);
       return res.status(200).json({ success: true });
     }

@@ -17,14 +17,15 @@ export default async function handler(req: any, res: any) {
     const todayCount = incidents.filter((item: any) => String(item.incident_date).slice(0, 10) === today).length;
     const unresolved = incidents.filter((item: any) => !item.resolution_status || item.resolution_status === 'Open' || item.resolution_status === 'In Progress');
     const overdue = unresolved.filter((item: any) => item.target_resolution_date && String(item.target_resolution_date).slice(0, 10) < today).length;
+    const repeatOverdue = unresolved.filter((item: any) => { if (!item.target_resolution_date) return false; const days = (new Date(`${today}T00:00:00`).getTime() - new Date(`${String(item.target_resolution_date).slice(0, 10)}T00:00:00`).getTime()) / 86400000; return days >= 3; }).length;
     const verifyQueue = incidents.filter((item: any) => item.resolution_status === 'Resolved').length;
-    const message = `📊 <b>สรุปการกำกับความเสี่ยงประจำวัน</b>\nวันนี้บันทึกใหม่ <b>${todayCount}</b> รายการ\nยังไม่ปิด <b>${unresolved.length}</b> รายการ\nเกินกำหนด SLA <b>${overdue}</b> รายการ\nรอการ Verify <b>${verifyQueue}</b> รายการ\n\n${todayCount === 0 ? 'หากพบเหตุการณ์ความเสี่ยง กรุณาบันทึกข้อมูลผ่านระบบ' : 'กรุณาตรวจสอบความครบถ้วนและดำเนินการรายการค้างตามลำดับ'}`;
+    const message = `📊 <b>สรุปการกำกับความเสี่ยงประจำวัน</b>\nวันนี้บันทึกใหม่ <b>${todayCount}</b> รายการ\nยังไม่ปิด <b>${unresolved.length}</b> รายการ\nเกินกำหนด SLA <b>${overdue}</b> รายการ\nเกิน SLA ต่อเนื่อง ≥3 วัน <b>${repeatOverdue}</b> รายการ\nรอการ Verify <b>${verifyQueue}</b> รายการ\n\n${todayCount === 0 ? 'หากพบเหตุการณ์ความเสี่ยง กรุณาบันทึกข้อมูลผ่านระบบ' : 'กรุณาตรวจสอบความครบถ้วนและดำเนินการรายการค้างตามลำดับ'}`;
     const botToken = (process.env.TELEGRAM_BOT_TOKEN || '').trim().replace(/^bot/i, '');
     const chatId = (process.env.TELEGRAM_CHAT_ID || '').trim();
     if (!botToken || !chatId) throw new Error('Telegram credentials are not configured');
     const telegramResponse = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: 'เปิดระบบ Lab Incident', url: APP_URL }], [{ text: `ดูรายการเกิน SLA (${overdue})`, url: `${APP_URL}data?status=open` }, { text: `ดูรายการรอ Verify (${verifyQueue})`, url: `${APP_URL}data?status=Resolved` }]] } }) });
     if (!telegramResponse.ok) throw new Error((await telegramResponse.json()).description || 'Telegram send failed');
-    return res.status(200).json({ success: true, date: today, todayCount, overdue, verifyQueue });
+    return res.status(200).json({ success: true, date: today, todayCount, overdue, repeatOverdue, verifyQueue });
   } catch (error: any) {
     console.error('Daily reminder error:', error);
     return res.status(500).json({ error: error.message || 'Daily reminder failed' });
