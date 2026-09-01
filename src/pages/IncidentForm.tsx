@@ -99,6 +99,8 @@ export default function IncidentForm() {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [lastSavedId, setLastSavedId] = useState<string | null>(null);
+  const [notificationStatus, setNotificationStatus] = useState<"idle" | "sent" | "skipped" | "error">("idle");
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [inlineError, setInlineError] = useState("");
   const [riskItemSearch, setRiskItemSearch] = useState("");
@@ -250,8 +252,17 @@ export default function IncidentForm() {
   const saveDraftNow = () => {
     localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
     setDraftSavedAt(new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }));
-    setSaveStatus("saved");
-    window.setTimeout(() => setSaveStatus("idle"), 1800);
+    setSaveStatus("idle");
+  };
+
+  const startNewIncident = () => {
+    setLastSavedId(null);
+    setNotificationStatus("idle");
+    setSaveStatus("idle");
+    setInlineError("");
+    setFormData({ incident_date: new Date().toISOString().split("T")[0], risk_type: "", process_type: "", risk_items: [], other_risk_item: "", incident_details: "", initial_response: "", impact_level: "", group_type: "", guideline: "", responsible_person: "", causing_department: "", resolution_status: "Open" });
+    setStep(1);
+    setRiskItemSearch("");
   };
 
   const nextStep = () => {
@@ -271,7 +282,7 @@ export default function IncidentForm() {
     setSaveStatus("saving");
     try {
       // 1. Save to Google Sheets through the server API
-      await createIncident({
+      const createdIncident = await createIncident({
         incident_date: formData.incident_date,
         risk_type: formData.risk_type,
         process_type: formData.process_type || null,
@@ -289,6 +300,7 @@ export default function IncidentForm() {
       localStorage.removeItem(DRAFT_KEY);
       localStorage.removeItem(PENDING_KEY);
       setSaveStatus("saved");
+      setLastSavedId(createdIncident?.id || null);
 
       // 2. Send Telegram Notification via Backend
       const message = `
@@ -303,49 +315,19 @@ export default function IncidentForm() {
 
       const notificationSettings = await fetchNotificationSettings().catch(() => ({ enabled: true, notifyNearMiss: true, notifyMiss: true, notifyNoHarm: false }));
       const shouldNotify = notificationSettings.enabled && ((formData.group_type === "Near Miss" && notificationSettings.notifyNearMiss) || (formData.group_type === "Miss" && notificationSettings.notifyMiss) || (formData.group_type === "No Harm" && notificationSettings.notifyNoHarm));
-      if (shouldNotify) await fetch("/api/notify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message }),
-      });
-
-      Swal.fire({
-        title: "บันทึกสำเร็จ! ✅",
-        text: "ข้อมูลอุบัติการณ์ถูกบันทึกเรียบร้อยแล้ว",
-        icon: "success",
-        confirmButtonColor: "#800000",
-        confirmButtonText: "ตกลง",
-      });
-
-      // Reset form
-      setFormData({
-        incident_date: new Date().toISOString().split("T")[0],
-        risk_type: "",
-        process_type: "",
-        risk_items: [],
-        other_risk_item: "",
-        incident_details: "",
-        initial_response: "",
-        impact_level: "",
-        group_type: "",
-        guideline: "",
-        responsible_person: "",
-        causing_department: "",
-        resolution_status: "Open",
-      });
-      setStep(1);
-      setRiskItemSearch("");
+      if (!shouldNotify) setNotificationStatus("skipped");
+      else {
+        try {
+          const notificationResponse = await fetch("/api/notify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message }) });
+          setNotificationStatus(notificationResponse.ok ? "sent" : "error");
+        } catch { setNotificationStatus("error"); }
+      }
       fetchRiskItemPopularity();
     } catch (error: any) {
       console.error("Error saving incident:", error);
       localStorage.setItem(PENDING_KEY, JSON.stringify({ data: { ...formData, resolution_status: formData.resolution_status || "Open" }, queuedAt: new Date().toISOString() }));
       setSaveStatus("error");
-      Swal.fire({
-        title: isOffline ? "บันทึกแบบร่างไว้แล้ว" : "เกิดข้อผิดพลาด! ❌",
-        text: isOffline ? "ระบบจะส่งข้อมูลให้อัตโนมัติเมื่อกลับมาออนไลน์" : (error.message || "ไม่สามารถบันทึกข้อมูลได้"),
-        icon: isOffline ? "info" : "error",
-        confirmButtonColor: isOffline ? "#800000" : "#ef4444",
-      });
+      setInlineError(isOffline ? "บันทึกแบบร่างไว้แล้ว ระบบจะส่งข้อมูลให้อัตโนมัติเมื่อกลับมาออนไลน์" : (error.message || "ไม่สามารถบันทึกข้อมูลได้"));
     } finally {
       setIsSubmitting(false);
     }
@@ -430,6 +412,12 @@ export default function IncidentForm() {
         <span><i className={cn("mr-2", isOffline ? "fa-solid fa-cloud-arrow-down" : "fa-solid fa-cloud-check")} />{isOffline ? "ออฟไลน์: ระบบจะเก็บแบบร่างไว้ในเครื่อง" : "ออนไลน์: พร้อมบันทึกลง Google Sheets"}</span>
         {draftSavedAt && <span className="opacity-75">Draft ล่าสุด {draftSavedAt}</span>}
       </div>
+      <div className={cn("mx-6 mt-3 flex flex-col gap-3 rounded-xl border px-4 py-3 md:mx-8 sm:flex-row sm:items-center sm:justify-between", isOffline ? "border-amber-200 bg-amber-50/60" : saveStatus === "saving" ? "border-slate-200 bg-slate-50" : saveStatus === "error" ? "border-rose-200 bg-rose-50" : lastSavedId ? "border-emerald-200 bg-emerald-50/70" : "border-slate-200 bg-white")} role="status" aria-live="polite">
+        <div className="flex items-center gap-2 text-sm font-semibold text-slate-700"><i className={cn("w-4 text-center", isOffline ? "fa-solid fa-cloud-slash text-amber-600" : saveStatus === "saving" ? "fa-solid fa-spinner fa-spin text-slate-500" : saveStatus === "error" ? "fa-solid fa-circle-exclamation text-rose-600" : lastSavedId ? "fa-solid fa-circle-check text-emerald-600" : "fa-solid fa-pen-to-square text-slate-400")} />{isOffline ? "รอเชื่อมต่อเพื่อซิงก์" : saveStatus === "saving" ? "กำลังบันทึกข้อมูล..." : saveStatus === "error" ? "บันทึกไม่สำเร็จ" : lastSavedId ? "บันทึกลงระบบแล้ว" : draftSavedAt ? `บันทึกแบบร่างแล้ว ${draftSavedAt}` : "ยังไม่ได้บันทึก"}</div>
+        {lastSavedId && <div className="flex flex-wrap items-center gap-2"><span className="rounded-lg bg-white px-2.5 py-1 font-mono text-xs font-bold text-emerald-800 ring-1 ring-emerald-200">{lastSavedId}</span><button onClick={() => navigator.clipboard?.writeText(lastSavedId)} className="text-xs font-semibold text-emerald-700 hover:underline" title="คัดลอกเลขอ้างอิง"><i className="fa-regular fa-copy mr-1" />คัดลอก</button><a href="#incident-preview" className="text-xs font-semibold text-emerald-700 hover:underline">ดูรายละเอียด</a><a href="/data" className="text-xs font-semibold text-emerald-700 hover:underline">แก้ไข</a><button onClick={startNewIncident} className="rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-bold text-white transition hover:bg-emerald-700">บันทึกเหตุการณ์ใหม่</button></div>}
+        {saveStatus === "error" && !lastSavedId && <button onClick={handleSubmit} disabled={isSubmitting} className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-rose-700">ลองใหม่</button>}
+      </div>
+      {lastSavedId && <div id="incident-preview" className="mx-6 mt-3 rounded-xl border border-emerald-100 bg-white px-4 py-3 text-xs text-slate-600 md:mx-8"><i className="fa-solid fa-shield-check mr-2 text-emerald-600" />ข้อมูลถูกบันทึกใน Google Sheets แล้ว · Telegram {notificationStatus === "sent" ? "ส่งแจ้งเตือนแล้ว" : notificationStatus === "skipped" ? "ข้ามตามการตั้งค่า" : notificationStatus === "error" ? "ส่งไม่สำเร็จ แต่ข้อมูลหลักถูกบันทึกแล้ว" : "กำลังตรวจสอบ"}</div>}
 
       <div className="p-6 md:p-8">
         {renderStepIndicator()}
