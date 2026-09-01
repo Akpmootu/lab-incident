@@ -1,0 +1,12 @@
+{
+  "name": "Lab Incident — Risk Intelligence",
+  "short_name": "Lab Incident",
+  "description": "ระบบบันทึกและวิเคราะห์อุบัติการณ์ความเสี่ยง โรงพยาบาลกงหรา",
+  "lang": "th",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6f8f7",
+  "theme_color": "#122033",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

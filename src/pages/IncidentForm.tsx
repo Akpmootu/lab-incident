@@ -90,6 +90,7 @@ const IMPACT_LEVELS_NON_CLINIC = ["0", "1", "2", "3", "4"];
 export default function IncidentForm() {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [riskItemSearch, setRiskItemSearch] = useState("");
   const [riskItemPopularity, setRiskItemPopularity] = useState<
@@ -200,6 +201,7 @@ export default function IncidentForm() {
     if (!validateStep()) return;
 
     setIsSubmitting(true);
+    setSaveStatus("saving");
     try {
       // 1. Save to Google Sheets through the server API
       await createIncident({
@@ -216,6 +218,7 @@ export default function IncidentForm() {
         responsible_person: formData.responsible_person,
         causing_department: formData.causing_department,
       });
+      setSaveStatus("saved");
 
       // 2. Send Telegram Notification via Backend
       const message = `
@@ -262,6 +265,7 @@ export default function IncidentForm() {
       fetchRiskItemPopularity();
     } catch (error: any) {
       console.error("Error saving incident:", error);
+      setSaveStatus("error");
       Swal.fire({
         title: "เกิดข้อผิดพลาด! ❌",
         text: error.message || "ไม่สามารถบันทึกข้อมูลได้",
@@ -338,7 +342,13 @@ export default function IncidentForm() {
   );
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+    <div className="relative bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+      <AnimatePresence>
+        {saveStatus !== "idle" && <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className={cn("fixed right-4 top-24 z-50 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold shadow-xl", saveStatus === "saved" ? "bg-emerald-600 text-white" : saveStatus === "error" ? "bg-rose-600 text-white" : "bg-slate-900 text-white")} role="status" aria-live="polite">
+          <i className={saveStatus === "saving" ? "fa-solid fa-spinner fa-spin" : saveStatus === "saved" ? "fa-solid fa-circle-check" : "fa-solid fa-circle-exclamation"} />
+          {saveStatus === "saving" ? "กำลังบันทึกลง Google Sheets…" : saveStatus === "saved" ? "บันทึกข้อมูลเรียบร้อยแล้ว" : "บันทึกไม่สำเร็จ กรุณาลองใหม่"}
+        </motion.div>}
+      </AnimatePresence>
       <div className="bg-gradient-to-r from-maroon-700 to-maroon-900 p-6 text-white">
         <h2 className="text-2xl font-bold flex items-center gap-3">
           <i className="fa-solid fa-file-signature"></i>
