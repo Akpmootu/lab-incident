@@ -18,7 +18,10 @@ export default async function handler(req: any, res: any) {
     const message = todayCount > 0
       ? `📊 <b>สรุปการบันทึกความเสี่ยงประจำวัน</b>\nวันนี้มีการบันทึกแล้ว <b>${todayCount}</b> รายการ\n\nกรุณาตรวจสอบความครบถ้วนของข้อมูลและสถานะการปิดประเด็น`
       : `⏰ <b>แจ้งเตือนการบันทึกความเสี่ยงประจำวัน</b>\nวันนี้ยังไม่มีรายการความเสี่ยงที่บันทึกเข้าระบบ\n\nหากพบเหตุการณ์ความเสี่ยง กรุณาบันทึกข้อมูลผ่านระบบ`;
-    const telegramResponse = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: process.env.TELEGRAM_CHAT_ID, text: message, parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: 'เปิดระบบ Lab Incident', url: APP_URL }]] } }) });
+    const botToken = (process.env.TELEGRAM_BOT_TOKEN || '').trim().replace(/^bot/i, '');
+    const chatId = (process.env.TELEGRAM_CHAT_ID || '').trim();
+    if (!botToken || !chatId) throw new Error('Telegram credentials are not configured');
+    const telegramResponse = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: 'เปิดระบบ Lab Incident', url: APP_URL }]] } }) });
     if (!telegramResponse.ok) throw new Error((await telegramResponse.json()).description || 'Telegram send failed');
     return res.status(200).json({ success: true, date: today, todayCount });
   } catch (error: any) {

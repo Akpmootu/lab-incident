@@ -10,8 +10,8 @@ async function startServer() {
   // API routes
   app.post("/api/notify", async (req, res) => {
     const { message } = req.body;
-    const botToken = process.env.TELEGRAM_BOT_TOKEN;
-    const chatId = process.env.TELEGRAM_CHAT_ID;
+    const botToken = (process.env.TELEGRAM_BOT_TOKEN || '').trim().replace(/^bot/i, '');
+    const chatId = (process.env.TELEGRAM_CHAT_ID || '').trim();
 
     if (!botToken || !chatId) {
       return res.status(500).json({ error: "Telegram credentials not configured" });
