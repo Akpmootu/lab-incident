@@ -18,7 +18,8 @@ export default function Layout({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const active = navItems.find(item => item.path === location.pathname) ?? navItems[0];
-  const deployVersion = import.meta.env.VITE_DEPLOY_VERSION || '1.1.0';
+  const configuredVersion = import.meta.env.VITE_DEPLOY_VERSION || '';
+  const deployVersion = /^\d+\.\d+\.\d+$/.test(configuredVersion) ? configuredVersion : '1.1.0';
   const deployRef = import.meta.env.VITE_DEPLOY_REF || 'local';
 
   const Nav = ({ mobile = false }: { mobile?: boolean }) => (
