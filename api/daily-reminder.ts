@@ -1,4 +1,4 @@
-const APP_URL = process.env.APP_URL || 'https://lab-incident.vercel.app/';
+const APP_URL = `${(process.env.APP_URL || 'https://lab-incident.vercel.app').replace(/\/+$/, '')}/`;
 function bangkokDate() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); }
 
 export default async function handler(req: any, res: any) {
@@ -15,15 +15,16 @@ export default async function handler(req: any, res: any) {
     if (settings.dailyReminder === false || settings.enabled === false) return res.status(200).json({ success: true, skipped: true });
     const today = bangkokDate();
     const todayCount = incidents.filter((item: any) => String(item.incident_date).slice(0, 10) === today).length;
-    const message = todayCount > 0
-      ? `📊 <b>สรุปการบันทึกความเสี่ยงประจำวัน</b>\nวันนี้มีการบันทึกแล้ว <b>${todayCount}</b> รายการ\n\nกรุณาตรวจสอบความครบถ้วนของข้อมูลและสถานะการปิดประเด็น`
-      : `⏰ <b>แจ้งเตือนการบันทึกความเสี่ยงประจำวัน</b>\nวันนี้ยังไม่มีรายการความเสี่ยงที่บันทึกเข้าระบบ\n\nหากพบเหตุการณ์ความเสี่ยง กรุณาบันทึกข้อมูลผ่านระบบ`;
+    const unresolved = incidents.filter((item: any) => !item.resolution_status || item.resolution_status === 'Open' || item.resolution_status === 'In Progress');
+    const overdue = unresolved.filter((item: any) => item.target_resolution_date && String(item.target_resolution_date).slice(0, 10) < today).length;
+    const verifyQueue = incidents.filter((item: any) => item.resolution_status === 'Resolved').length;
+    const message = `📊 <b>สรุปการกำกับความเสี่ยงประจำวัน</b>\nวันนี้บันทึกใหม่ <b>${todayCount}</b> รายการ\nยังไม่ปิด <b>${unresolved.length}</b> รายการ\nเกินกำหนด SLA <b>${overdue}</b> รายการ\nรอการ Verify <b>${verifyQueue}</b> รายการ\n\n${todayCount === 0 ? 'หากพบเหตุการณ์ความเสี่ยง กรุณาบันทึกข้อมูลผ่านระบบ' : 'กรุณาตรวจสอบความครบถ้วนและดำเนินการรายการค้างตามลำดับ'}`;
     const botToken = (process.env.TELEGRAM_BOT_TOKEN || '').trim().replace(/^bot/i, '');
     const chatId = (process.env.TELEGRAM_CHAT_ID || '').trim();
     if (!botToken || !chatId) throw new Error('Telegram credentials are not configured');
-    const telegramResponse = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: 'เปิดระบบ Lab Incident', url: APP_URL }]] } }) });
+    const telegramResponse = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: 'เปิดระบบ Lab Incident', url: APP_URL }], [{ text: `ดูรายการเกิน SLA (${overdue})`, url: `${APP_URL}data?status=open` }, { text: `ดูรายการรอ Verify (${verifyQueue})`, url: `${APP_URL}data?status=Resolved` }]] } }) });
     if (!telegramResponse.ok) throw new Error((await telegramResponse.json()).description || 'Telegram send failed');
-    return res.status(200).json({ success: true, date: today, todayCount });
+    return res.status(200).json({ success: true, date: today, todayCount, overdue, verifyQueue });
   } catch (error: any) {
     console.error('Daily reminder error:', error);
     return res.status(500).json({ error: error.message || 'Daily reminder failed' });

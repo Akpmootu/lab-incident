@@ -1,10 +1,10 @@
 import { GoogleAuth } from 'google-auth-library';
 import { randomUUID } from 'node:crypto';
 
-const INCIDENT_HEADERS = ['id', 'incident_date', 'risk_type', 'process_type', 'risk_items', 'other_risk_item', 'incident_details', 'initial_response', 'impact_level', 'group_type', 'guideline', 'created_at', 'causing_department', 'responsible_person', 'resolution_status'] as const;
+const INCIDENT_HEADERS = ['id', 'incident_date', 'risk_type', 'process_type', 'risk_items', 'other_risk_item', 'incident_details', 'initial_response', 'impact_level', 'group_type', 'guideline', 'created_at', 'causing_department', 'responsible_person', 'resolution_status', 'resolved_at', 'verified_at', 'target_resolution_date', 'verified_by', 'status_reason'] as const;
 const HISTORY_HEADERS = ['id', 'incident_id', 'edited_at', 'edited_by', 'changes'] as const;
 const SHEET_ID = process.env.GOOGLE_SHEET_ID;
-const INCIDENT_RANGE = 'Incidents!A:O';
+const INCIDENT_RANGE = 'Incidents!A:T';
 const HISTORY_RANGE = "'Edit History'!A:E";
 const SETTINGS_RANGE = 'Settings!A:B';
 const DEFAULT_SETTINGS = { enabled: true, notifyNearMiss: true, notifyMiss: true, notifyNoHarm: false, dailyReminder: true };
@@ -86,6 +86,15 @@ async function getValues(range: string) {
   return sheetsRequest(`/values/${encodeURIComponent(range)}`);
 }
 
+async function ensureIncidentHeaders() {
+  const result = await getValues(INCIDENT_RANGE);
+  const header = result.values?.[0] || [];
+  if (INCIDENT_HEADERS.some((key, index) => header[index] !== key)) {
+    await updateRange('Incidents!A1:T1', [Array.from(INCIDENT_HEADERS)]);
+  }
+  return result;
+}
+
 async function updateRange(range: string, values: any[][]) {
   return sheetsRequest(`/values/${encodeURIComponent(range)}?valueInputOption=RAW`, { method: 'PUT', body: JSON.stringify({ range, majorDimension: 'ROWS', values }) });
 }
@@ -128,13 +137,16 @@ export default async function handler(req: any, res: any) {
         const result = await getValues(HISTORY_RANGE);
         return res.status(200).json({ data: rowsToObjects(result.values, HISTORY_HEADERS) });
       }
-      const result = await getValues(INCIDENT_RANGE);
+      const result = await ensureIncidentHeaders();
       return res.status(200).json({ data: rowsToObjects(result.values, INCIDENT_HEADERS) });
     }
 
     if (req.method === 'POST') {
       const input = req.body || {};
-      const incident = { ...input, id: input.id || randomUUID(), created_at: input.created_at || new Date().toISOString(), resolution_status: input.resolution_status || 'Open' };
+      const createdAt = input.created_at || new Date().toISOString();
+      const defaultTarget = new Date(createdAt); defaultTarget.setDate(defaultTarget.getDate() + 7);
+      const incident = { ...input, id: input.id || randomUUID(), created_at: createdAt, resolution_status: 'Open', resolved_at: null, verified_at: null, target_resolution_date: input.target_resolution_date || defaultTarget.toISOString().slice(0, 10), verified_by: null, status_reason: input.status_reason || 'เปิดประเด็นใหม่' };
+      await ensureIncidentHeaders();
       await appendRange(INCIDENT_RANGE, [objectToRow(incident, INCIDENT_HEADERS)]);
       await appendRange(HISTORY_RANGE, [[randomUUID(), incident.id, new Date().toISOString(), 'System', JSON.stringify({ action: 'created' })]]);
       return res.status(201).json({ data: incident });
@@ -143,14 +155,25 @@ export default async function handler(req: any, res: any) {
     if (req.method === 'PATCH') {
       const id = req.body?.id;
       if (!id) return res.status(400).json({ error: 'Missing incident id' });
-      const current = await getValues(INCIDENT_RANGE);
+      const current = await ensureIncidentHeaders();
       const values = current.values || [];
       const rowIndex = values.findIndex((row: any[], i: number) => i > 0 && row[0] === id);
       if (rowIndex < 1) return res.status(404).json({ error: 'Incident not found' });
       const original = Object.fromEntries(INCIDENT_HEADERS.map((key, i) => [key, parseCell(values[rowIndex][i], key)]));
-      const updated = { ...original, ...req.body }; delete updated.id;
+      const requestedStatus = req.body?.resolution_status;
+      const previousStatus = original.resolution_status || 'Open';
+      const order = ['Open', 'In Progress', 'Resolved', 'Verified'];
+      if (requestedStatus && requestedStatus !== previousStatus) {
+        if (order.indexOf(requestedStatus) !== order.indexOf(previousStatus) + 1) return res.status(400).json({ error: 'Status must move one step at a time' });
+        if (!req.body?.status_reason || String(req.body.status_reason).trim().length < 3) return res.status(400).json({ error: 'A reason is required when changing status' });
+      }
+      const now = new Date().toISOString();
+      const updated = { ...original, ...req.body };
+      if (requestedStatus === 'Resolved' && previousStatus !== 'Resolved') updated.resolved_at = req.body.resolved_at || now;
+      if (requestedStatus === 'Verified' && previousStatus !== 'Verified') { updated.verified_at = req.body.verified_at || now; updated.verified_by = req.body.verified_by || 'ผู้ตรวจสอบระบบ'; }
+      delete updated.id;
       updated.id = id;
-      await updateRange(`Incidents!A${rowIndex + 1}:N${rowIndex + 1}`, [objectToRow(updated, INCIDENT_HEADERS)]);
+      await updateRange(`Incidents!A${rowIndex + 1}:T${rowIndex + 1}`, [objectToRow(updated, INCIDENT_HEADERS)]);
       const changes: Row = {};
       for (const key of INCIDENT_HEADERS) if (JSON.stringify(original[key]) !== JSON.stringify(updated[key])) changes[key] = { old: original[key], new: updated[key] };
       if (Object.keys(changes).length) await appendRange(HISTORY_RANGE, [[randomUUID(), id, new Date().toISOString(), 'Admin', JSON.stringify(changes)]]);
@@ -160,11 +183,11 @@ export default async function handler(req: any, res: any) {
     if (req.method === 'DELETE') {
       const id = String(req.query.id || req.body?.id || '');
       if (!id) return res.status(400).json({ error: 'Missing incident id' });
-      const current = await getValues(INCIDENT_RANGE);
+      const current = await ensureIncidentHeaders();
       const values = current.values || [];
       const rowIndex = values.findIndex((row: any[], i: number) => i > 0 && row[0] === id);
       if (rowIndex < 1) return res.status(404).json({ error: 'Incident not found' });
-      await clearRange(`Incidents!A${rowIndex + 1}:N${rowIndex + 1}`);
+      await clearRange(`Incidents!A${rowIndex + 1}:T${rowIndex + 1}`);
       await appendRange(HISTORY_RANGE, [[randomUUID(), id, new Date().toISOString(), 'Admin', JSON.stringify({ action: 'deleted' })]]);
       return res.status(200).json({ success: true });
     }

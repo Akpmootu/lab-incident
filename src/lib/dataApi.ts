@@ -14,6 +14,11 @@ export interface IncidentRecord {
   responsible_person: string | null;
   causing_department: string | null;
   resolution_status?: 'Open' | 'In Progress' | 'Resolved' | 'Verified';
+  resolved_at?: string | null;
+  verified_at?: string | null;
+  target_resolution_date?: string | null;
+  verified_by?: string | null;
+  status_reason?: string | null;
 }
 
 async function request<T>(options: RequestInit = {}, query = ''): Promise<T> {

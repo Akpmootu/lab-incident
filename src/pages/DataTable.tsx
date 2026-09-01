@@ -37,7 +37,8 @@ export default function DataTable() {
   const [filterType, setFilterType] = useState<string>('all');
   const [filterImpact, setFilterImpact] = useState<string>('all');
   const [filterPerson, setFilterPerson] = useState<string>('all');
-  const filterStatus = searchParams.get('status') === 'open' ? 'open' : 'all';
+  const filterStatus = searchParams.get('status') || 'all';
+  const filterDate = searchParams.get('date') || 'all';
 
   // Edit State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -82,11 +83,12 @@ export default function DataTable() {
       const matchImpact = filterImpact === 'all' || inc.impact_level === filterImpact;
       const matchPerson = filterPerson === 'all' || inc.responsible_person === filterPerson;
       const currentStatus = inc.resolution_status || 'Open';
-      const matchStatus = filterStatus === 'all' || currentStatus === 'Open' || currentStatus === 'In Progress';
+      const matchStatus = filterStatus === 'all' || (filterStatus === 'open' ? (currentStatus === 'Open' || currentStatus === 'In Progress') : currentStatus === filterStatus);
+      const matchDate = filterDate === 'all' || (filterDate === 'today' && inc.incident_date === new Date().toISOString().slice(0, 10));
 
-      return matchSearch && matchYear && matchMonth && matchType && matchImpact && matchPerson && matchStatus;
+      return matchSearch && matchYear && matchMonth && matchType && matchImpact && matchPerson && matchStatus && matchDate;
     });
-  }, [incidents, searchTerm, filterYear, filterMonth, filterType, filterImpact, filterPerson, filterStatus]);
+  }, [incidents, searchTerm, filterYear, filterMonth, filterType, filterImpact, filterPerson, filterStatus, filterDate]);
 
   const handleViewDetails = (incident: Incident) => {
     const detailsHtml = `

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchIncidents as fetchIncidentsFromSheet } from '../lib/dataApi';
 import Swal from 'sweetalert2';
@@ -339,6 +340,7 @@ export default function ChartDashboard() {
           <p className="text-xs font-bold uppercase tracking-[.16em] text-maroon-200">Decision brief</p>
           <h2 className="mt-2 text-xl font-bold">สิ่งที่ผู้บริหารควรตัดสินใจวันนี้</h2>
           <p className="mt-2 text-sm leading-6 text-maroon-100">{decisionMetrics.nearChange === null ? 'กำลังสะสมข้อมูลเพื่อเปรียบเทียบแนวโน้ม Near Miss' : `Near Miss ${decisionMetrics.nearChange < 0 ? 'ลดลง' : decisionMetrics.nearChange > 0 ? 'เพิ่มขึ้น' : 'ทรงตัว'} ${Math.abs(decisionMetrics.nearChange).toFixed(0)}% เมื่อเทียบกับ 30 วันก่อน`} และมี {decisionMetrics.unresolved.length} ประเด็นที่ยังไม่ปิด โดยหน่วยงานที่มีเหตุการณ์สูงสุดคือ {decisionMetrics.topDepartment?.[0] || 'ยังไม่มีข้อมูล'}</p>
+          <Link to="/data?date=today" className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-xs font-bold text-white transition hover:bg-white/20"><i className="fa-solid fa-arrow-right" />ดำเนินการวันนี้ ({decisionMetrics.todayItems})</Link>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[['ความเสี่ยงที่ต้องดำเนินการวันนี้', decisionMetrics.todayItems, 'fa-solid fa-calendar-day', 'bg-rose-50 text-rose-700'], ['ค้างเกิน SLA 7 วัน', decisionMetrics.overdue, 'fa-solid fa-hourglass-end', 'bg-amber-50 text-amber-700'], ['หน่วยงานที่มีเหตุการณ์สูงสุด', decisionMetrics.topDepartment?.[0] || '—', 'fa-solid fa-building', 'bg-violet-50 text-violet-700'], ['อัตราการปิดประเด็น', `${filteredData.length ? ((decisionMetrics.verified / filteredData.length) * 100).toFixed(0) : 0}%`, 'fa-solid fa-circle-check', 'bg-emerald-50 text-emerald-700']].map(([label, value, icon, tone]) => <div key={String(label)} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-start justify-between"><p className="max-w-[75%] text-sm font-semibold text-slate-500">{label}</p><span className={`flex h-10 w-10 items-center justify-center rounded-xl ${tone}`}><i className={String(icon)} /></span></div><p className="mt-5 truncate text-2xl font-bold text-slate-950">{value}</p><p className="mt-1 text-xs text-slate-400">จากข้อมูลตามตัวกรองปัจจุบัน</p></div>)}
