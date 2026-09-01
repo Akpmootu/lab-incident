@@ -18,7 +18,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const active = navItems.find(item => item.path === location.pathname) ?? navItems[0];
-  const deployVersion = import.meta.env.VITE_DEPLOY_VERSION || 'local';
+  const deployVersion = import.meta.env.VITE_DEPLOY_VERSION || '1.1.0';
   const deployRef = import.meta.env.VITE_DEPLOY_REF || 'local';
 
   const Nav = ({ mobile = false }: { mobile?: boolean }) => (
@@ -66,7 +66,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-3"><button onClick={() => setMobileOpen(true)} className="icon-button md:hidden" aria-label="เปิดเมนู"><i className="fa-solid fa-bars" /></button><div><p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-maroon-700">Risk intelligence</p><h1 className="text-base font-semibold text-slate-900 sm:text-lg">{active.label}</h1></div></div>
           <div className="flex items-center gap-2 sm:gap-4"><span className="status-live hidden sm:inline-flex"><span className="status-dot" /> Google Sheets synced</span><Link to="/report" className="primary-button"><i className="fa-solid fa-plus" /><span className="hidden sm:inline">บันทึกใหม่</span></Link></div>
         </header>
-        <main className="mx-auto min-h-[calc(100vh-76px)] max-w-[1440px] px-4 py-6 pb-24 sm:px-6 lg:px-8 lg:py-8">{children}<footer className="mt-10 flex flex-col gap-1 border-t border-slate-200/70 pt-5 text-[11px] text-slate-400 sm:flex-row sm:items-center sm:justify-between"><span>Risk Management • กลุ่มงานเทคนิคการแพทย์ โรงพยาบาลกงหรา</span><span className="font-mono">v{deployVersion} • {deployRef}</span></footer></main>
+        <main className="mx-auto min-h-[calc(100vh-76px)] max-w-[1440px] px-4 py-6 pb-24 sm:px-6 lg:px-8 lg:py-8">{children}<footer className="mt-10 border-t border-slate-200/70 pt-5 text-[11px] text-slate-400"><div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><p className="font-semibold text-slate-500">Powered by กลุ่มงานเทคนิคการแพทย์ โรงพยาบาลกงหรา</p><p className="mt-0.5">Created by Mr.Akaporn Sripanrod</p></div><div className="text-left sm:text-right"><p className="font-mono font-semibold text-slate-500">Version {deployVersion}</p><p className="font-mono text-[10px] text-slate-400">Build {deployRef}</p></div></div></footer></main>
       </div>
       <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 bg-white/95 px-2 py-2 backdrop-blur-xl md:hidden"><div className="mx-auto flex max-w-md justify-around">{navItems.slice(0, 4).map(item => <Link key={item.path} to={item.path} className={cn('flex min-w-0 flex-col items-center gap-1 px-3 py-1 text-[10px] font-medium', location.pathname === item.path ? 'text-maroon-700' : 'text-slate-400')}><i className={cn(item.icon, 'text-base')} /><span className="max-w-[72px] truncate">{item.label.replace('Executive Dashboard', 'Dashboard')}</span></Link>)}</div></div>
     </div>
