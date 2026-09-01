@@ -1,4 +1,4 @@
-const CACHE = 'lab-incident-shell-v1';
+const CACHE = 'lab-incident-shell-v2';
 const APP_SHELL = ['/', '/manifest.webmanifest', '/icon.svg'];
 self.addEventListener('install', event => { event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', event => { event.waitUntil(self.clients.claim()); });
