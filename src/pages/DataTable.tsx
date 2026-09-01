@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { fetchIncidents, updateIncident, deleteIncident } from '../lib/dataApi';
+import { useSearchParams } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { formatDateTH } from '../lib/dateUtils';
 import dayjs from 'dayjs';
@@ -25,6 +26,7 @@ interface Incident {
 }
 
 export default function DataTable() {
+  const [searchParams] = useSearchParams();
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -33,6 +35,7 @@ export default function DataTable() {
   const [filterType, setFilterType] = useState<string>('all');
   const [filterImpact, setFilterImpact] = useState<string>('all');
   const [filterPerson, setFilterPerson] = useState<string>('all');
+  const filterStatus = searchParams.get('status') === 'open' ? 'open' : 'all';
 
   // Edit State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -76,10 +79,12 @@ export default function DataTable() {
       const matchType = filterType === 'all' || inc.risk_type === filterType;
       const matchImpact = filterImpact === 'all' || inc.impact_level === filterImpact;
       const matchPerson = filterPerson === 'all' || inc.responsible_person === filterPerson;
+      const currentStatus = inc.resolution_status || 'Open';
+      const matchStatus = filterStatus === 'all' || currentStatus === 'Open' || currentStatus === 'In Progress';
 
-      return matchSearch && matchYear && matchMonth && matchType && matchImpact && matchPerson;
+      return matchSearch && matchYear && matchMonth && matchType && matchImpact && matchPerson && matchStatus;
     });
-  }, [incidents, searchTerm, filterYear, filterMonth, filterType, filterImpact, filterPerson]);
+  }, [incidents, searchTerm, filterYear, filterMonth, filterType, filterImpact, filterPerson, filterStatus]);
 
   const handleViewDetails = (incident: Incident) => {
     const detailsHtml = `

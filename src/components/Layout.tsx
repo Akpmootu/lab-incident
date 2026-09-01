@@ -1,75 +1,64 @@
-import { ReactNode, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
+import { fetchIncidents, IncidentRecord } from '../lib/dataApi';
 
-const navItems = [
-  { path: '/', icon: 'fa-solid fa-grid-2', label: 'ภาพรวม' },
-  { path: '/report', icon: 'fa-solid fa-pen-to-square', label: 'บันทึกเหตุการณ์' },
-  { path: '/charts', icon: 'fa-solid fa-chart-pie', label: 'Executive Dashboard' },
-  { path: '/dashboard', icon: 'fa-solid fa-table', label: 'สรุปแบบตาราง' },
-  { path: '/data', icon: 'fa-solid fa-list-check', label: 'รายการทั้งหมด' },
-  { path: '/audit', icon: 'fa-solid fa-clock-rotate-left', label: 'Audit Log' },
-  { path: '/settings/notifications', icon: 'fa-solid fa-bell', label: 'การแจ้งเตือน' },
+type MenuItem = { path: string; icon: string; label: string; description?: string; badge?: number };
+const groups: { label: string; items: MenuItem[] }[] = [
+  { label: 'บันทึกข้อมูล', items: [{ path: '/report', icon: 'fa-solid fa-pen-to-square', label: 'บันทึกความเสี่ยงใหม่', description: 'สร้างรายการ Incident ใหม่' }, { path: '/data', icon: 'fa-solid fa-list-check', label: 'รายการความเสี่ยง', description: 'ค้นหาและติดตามรายการทั้งหมด' }, { path: '/offline-drafts', icon: 'fa-solid fa-cloud-arrow-up', label: 'Offline Drafts', description: 'รายการที่รอการซิงก์' }] },
+  { label: 'ติดตามและวิเคราะห์', items: [{ path: '/dashboard', icon: 'fa-solid fa-table', label: 'Dashboard', description: 'สรุปข้อมูลในรูปแบบตาราง' }, { path: '/data?status=open', icon: 'fa-solid fa-list-check', label: 'ประเด็นที่ยังไม่ปิด', description: 'Open และ In Progress' }, { path: '/charts', icon: 'fa-solid fa-chart-pie', label: 'รายงานผู้บริหาร', description: 'ตัวชี้วัดและแนวโน้ม' }] },
+  { label: 'การกำกับดูแล', items: [{ path: '/audit', icon: 'fa-solid fa-clock-rotate-left', label: 'Audit Log', description: 'ประวัติการเปลี่ยนแปลง' }, { path: '/settings/notifications', icon: 'fa-solid fa-bell', label: 'Notification Settings', description: 'ตั้งค่าการแจ้งเตือน' }, { path: '/system-status', icon: 'fa-solid fa-heart-pulse', label: 'System Status', description: 'สถานะการเชื่อมต่อระบบ' }] },
 ];
+const allItems = groups.flatMap(group => group.items);
+const mobileItems = [{ path: '/', icon: 'fa-solid fa-grid-2', label: 'ภาพรวม' }, { path: '/report', icon: 'fa-solid fa-pen-to-square', label: 'บันทึกใหม่' }, { path: '/data', icon: 'fa-solid fa-list-check', label: 'รายการ' }, { path: '/charts', icon: 'fa-solid fa-chart-pie', label: 'Dashboard' }];
 
 export default function Layout({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [incidents, setIncidents] = useState<IncidentRecord[]>([]);
+  const [online, setOnline] = useState(navigator.onLine);
+  const [unresolved, setUnresolved] = useState(0);
   const location = useLocation();
-  const active = navItems.find(item => item.path === location.pathname) ?? navItems[0];
+  const navigate = useNavigate();
   const configuredVersion = import.meta.env.VITE_DEPLOY_VERSION || '';
   const deployVersion = /^\d+\.\d+\.\d+$/.test(configuredVersion) ? configuredVersion : '1.1.0';
   const deployRef = import.meta.env.VITE_DEPLOY_REF || 'local';
+  const activeItem = allItems.find(item => item.path.split('?')[0] === location.pathname) ?? { label: location.pathname === '/' ? 'ภาพรวม' : 'Workspace', icon: 'fa-solid fa-grid-2' };
+  const filteredItems = useMemo(() => allItems.filter(item => `${item.label} ${item.description}`.toLowerCase().includes(query.toLowerCase())).slice(0, 6), [query]);
+  const matchingIncidents = useMemo(() => query.length < 2 ? [] : incidents.filter(item => `${item.id} ${item.risk_type} ${item.incident_details}`.toLowerCase().includes(query.toLowerCase())).slice(0, 4), [incidents, query]);
 
-  const Nav = ({ mobile = false }: { mobile?: boolean }) => (
-    <nav className={cn('flex flex-col gap-1', mobile ? 'p-4' : 'p-3')}>
-      <p className={cn('px-3 pb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400', collapsed && !mobile && 'hidden')}>Workspace</p>
-      {navItems.map(item => {
-        const isActive = location.pathname === item.path;
-        return (
-          <Link key={item.path} to={item.path} onClick={() => setMobileOpen(false)} aria-current={isActive ? 'page' : undefined}
-            className={cn('group relative flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition-all duration-200', isActive ? 'bg-maroon-50 text-maroon-800 shadow-sm ring-1 ring-maroon-100' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900', collapsed && !mobile && 'justify-center px-2')}>
-            {isActive && <span className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-maroon-600" />}
-            <span className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm transition-colors', isActive ? 'bg-maroon-600 text-white shadow-sm shadow-maroon-600/20' : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200')}><i className={item.icon} /></span>
-            <span className={cn('truncate font-medium', collapsed && !mobile && 'hidden')}>{item.label}</span>
-            {collapsed && !mobile && <span className="pointer-events-none absolute left-full z-50 ml-3 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1.5 text-xs text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">{item.label}</span>}
-          </Link>
-        );
-      })}
-    </nav>
-  );
+  useEffect(() => {
+    const update = () => setOnline(navigator.onLine);
+    window.addEventListener('online', update); window.addEventListener('offline', update);
+    const onKey = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setPaletteOpen(true); } if (!paletteOpen && event.key.toLowerCase() === 'n' && !['INPUT', 'TEXTAREA', 'SELECT'].includes((event.target as HTMLElement)?.tagName)) { event.preventDefault(); navigate('/report'); } if (event.key === 'Escape') setPaletteOpen(false); };
+    window.addEventListener('keydown', onKey);
+    fetchIncidents().then(items => { setIncidents(items); setUnresolved(items.filter(item => !item.resolution_status || item.resolution_status === 'Open' || item.resolution_status === 'In Progress').length); }).catch(() => undefined);
+    return () => { window.removeEventListener('online', update); window.removeEventListener('offline', update); window.removeEventListener('keydown', onKey); };
+  }, [navigate, paletteOpen]);
 
-  return (
-    <div className="min-h-screen bg-[#f6f8f7] text-slate-900">
-      <aside className={cn('fixed inset-y-0 left-0 z-40 hidden border-r border-slate-200/80 bg-white/90 backdrop-blur-xl transition-[width] duration-200 md:flex md:flex-col', collapsed ? 'w-[84px]' : 'w-[264px]')}>
-        <div className={cn('flex h-[76px] items-center border-b border-slate-100 px-4', collapsed ? 'justify-center' : 'justify-between')}>
-          <Link to="/" className={cn('flex items-center gap-3', collapsed && 'justify-center')}>
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-maroon-300 shadow-lg shadow-slate-900/15"><i className="fa-solid fa-microscope" /></span>
-            {!collapsed && <span><span className="block text-sm font-bold tracking-tight text-slate-950">Lab Incident</span><span className="block text-[10px] font-medium uppercase tracking-[0.16em] text-slate-400">Kongrha Laboratory</span></span>}
-          </Link>
-          {!collapsed && <button onClick={() => setCollapsed(true)} className="icon-button" aria-label="ย่อเมนู"><i className="fa-solid fa-sidebar" /></button>}
-        </div>
-        {collapsed && <button onClick={() => setCollapsed(false)} className="mx-auto mt-4 icon-button" aria-label="ขยายเมนู"><i className="fa-solid fa-sidebar-flip" /></button>}
-        <div className="flex-1 overflow-y-auto py-5"><Nav /></div>
-        <div className={cn('border-t border-slate-100 p-4', collapsed && 'px-3')}>
-          <div className={cn('flex items-center gap-3 rounded-xl bg-slate-50 p-3', collapsed && 'justify-center p-2')}>
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-maroon-100 text-maroon-700"><i className="fa-solid fa-user-doctor" /></span>
-            {!collapsed && <span className="min-w-0"><b className="block truncate text-xs text-slate-800">กลุ่มงานเทคนิคการแพทย์</b><small className="text-[11px] text-slate-400">ผู้ใช้งานระบบ</small></span>}
-          </div>
-        </div>
-      </aside>
+  const go = (path: string) => { setPaletteOpen(false); setQuery(''); navigate(path); };
+  const Nav = ({ mobile = false }: { mobile?: boolean }) => <nav className={cn('flex flex-col', mobile ? 'p-4' : 'px-3 py-5')} aria-label="เมนูหลัก">
+    {groups.map(group => <div key={group.label} className="mb-5"><p className={cn('px-3 pb-2 text-[10px] font-bold uppercase tracking-[.16em] text-slate-400', collapsed && !mobile && 'text-center text-[8px]')}>{collapsed && !mobile ? '•' : group.label}</p>{group.items.map(item => { const isActive = location.pathname === item.path.split('?')[0] && (item.path.split('?')[0] !== '/data' || !location.search.includes('status=open') || item.label === 'ประเด็นที่ยังไม่ปิด'); return <Link key={item.path} to={item.path} onClick={() => setMobileOpen(false)} aria-current={isActive ? 'page' : undefined} title={collapsed && !mobile ? `${item.label} — ${item.description}` : undefined} className={cn('group relative mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-maroon-300', isActive ? 'bg-maroon-50 font-bold text-maroon-800 shadow-sm ring-1 ring-maroon-100' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900', collapsed && !mobile && 'justify-center px-2')}>
+      {isActive && <span className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-maroon-600" />}<span className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm transition-colors', isActive ? 'bg-maroon-600 text-white shadow-sm shadow-maroon-600/20' : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200')}><i className={item.icon} /></span><span className={cn('truncate', collapsed && !mobile && 'hidden')}>{item.label}</span>{item.label === 'ประเด็นที่ยังไม่ปิด' && !collapsed && !mobile && <span className="ml-auto rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">{unresolved}</span>}{collapsed && !mobile && <span className="pointer-events-none absolute left-full z-50 ml-3 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1.5 text-xs text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">{item.label}</span>}
+    </Link>; })}</div>)}
+  </nav>;
 
-      <AnimatePresence>{mobileOpen && <><motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMobileOpen(false)} className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-sm md:hidden" /><motion.aside initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }} transition={{ duration: .2 }} className="fixed inset-y-0 left-0 z-50 w-[280px] bg-white md:hidden"><div className="flex h-[76px] items-center justify-between border-b border-slate-100 px-5"><div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-950 text-maroon-300"><i className="fa-solid fa-microscope" /></span><b>Lab Incident</b></div><button onClick={() => setMobileOpen(false)} className="icon-button" aria-label="ปิดเมนู"><i className="fa-solid fa-xmark" /></button></div><Nav mobile /></motion.aside></>}</AnimatePresence>
-
-      <div className={cn('min-h-screen transition-[padding] duration-200 md:pl-[264px]', collapsed && 'md:pl-[84px]')}>
-        <header className="sticky top-0 z-30 flex h-[76px] items-center justify-between border-b border-slate-200/70 bg-white/80 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3"><button onClick={() => setMobileOpen(true)} className="icon-button md:hidden" aria-label="เปิดเมนู"><i className="fa-solid fa-bars" /></button><div><p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-maroon-700">Risk intelligence</p><h1 className="text-base font-semibold text-slate-900 sm:text-lg">{active.label}</h1></div></div>
-          <div className="flex items-center gap-2 sm:gap-4"><span className="status-live hidden sm:inline-flex"><span className="status-dot" /> Google Sheets synced</span><Link to="/report" className="primary-button"><i className="fa-solid fa-plus" /><span className="hidden sm:inline">บันทึกใหม่</span></Link></div>
-        </header>
-        <main className="mx-auto min-h-[calc(100vh-76px)] max-w-[1440px] px-4 py-6 pb-24 sm:px-6 lg:px-8 lg:py-8">{children}<footer className="mt-10 border-t border-slate-200/70 pt-5 text-[11px] text-slate-400"><div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><p className="font-semibold text-slate-500">Powered by กลุ่มงานเทคนิคการแพทย์ โรงพยาบาลกงหรา</p><p className="mt-0.5">Created by Mr.Akaporn Sripanrod</p></div><div className="text-left sm:text-right"><p className="font-mono font-semibold text-slate-500">Version {deployVersion}</p><p className="font-mono text-[10px] text-slate-400">Build {deployRef}</p></div></div></footer></main>
-      </div>
-      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 bg-white/95 px-2 py-2 backdrop-blur-xl md:hidden"><div className="mx-auto flex max-w-md justify-around">{navItems.slice(0, 4).map(item => <Link key={item.path} to={item.path} className={cn('flex min-w-0 flex-col items-center gap-1 px-3 py-1 text-[10px] font-medium', location.pathname === item.path ? 'text-maroon-700' : 'text-slate-400')}><i className={cn(item.icon, 'text-base')} /><span className="max-w-[72px] truncate">{item.label.replace('Executive Dashboard', 'Dashboard')}</span></Link>)}</div></div>
+  return <div className="min-h-screen bg-[#f6f8f7] text-slate-900">
+    <aside className={cn('fixed inset-y-0 left-0 z-40 hidden border-r border-slate-200/80 bg-white/95 backdrop-blur-xl transition-[width] duration-200 md:flex md:flex-col', collapsed ? 'w-[84px]' : 'w-[280px]')}>
+      <div className={cn('flex h-[76px] items-center border-b border-slate-100 px-4', collapsed ? 'justify-center' : 'justify-between')}><Link to="/" className={cn('flex items-center gap-3', collapsed && 'justify-center')} title="กลับหน้าแรก"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-maroon-300 shadow-lg shadow-slate-900/15"><i className="fa-solid fa-microscope" /></span>{!collapsed && <span><span className="block text-sm font-bold tracking-tight text-slate-950">Lab Incident</span><span className="block text-[10px] font-medium uppercase tracking-[.16em] text-slate-400">Kongrha Laboratory</span></span>}</Link>{!collapsed && <button onClick={() => setCollapsed(true)} className="icon-button" aria-label="ย่อเมนู" title="ย่อเมนู"><i className="fa-solid fa-sidebar" /></button>}</div>
+      {collapsed && <button onClick={() => setCollapsed(false)} className="mx-auto mt-4 icon-button" aria-label="ขยายเมนู" title="ขยายเมนู"><i className="fa-solid fa-sidebar-flip" /></button>}<div className="flex-1 overflow-y-auto"><Nav /></div>
+      <div className={cn('border-t border-slate-100 p-4', collapsed && 'px-3')}><Link to="/system-status" className={cn('flex items-center gap-3 rounded-xl bg-slate-50 p-3 transition hover:bg-maroon-50', collapsed && 'justify-center p-2')} title="ดู System Status"><span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-full', online ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700')}><i className={online ? 'fa-solid fa-wifi' : 'fa-solid fa-wifi-slash'} /></span>{!collapsed && <span className="min-w-0"><b className="block truncate text-xs text-slate-800">{online ? 'ระบบออนไลน์' : 'โหมดออฟไลน์'}</b><small className="text-[11px] text-slate-400">System Status</small></span>}</Link></div>
+    </aside>
+    <AnimatePresence>{mobileOpen && <><motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMobileOpen(false)} className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-sm md:hidden" /><motion.aside initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }} transition={{ duration: .18 }} className="fixed inset-y-0 left-0 z-50 w-[300px] bg-white md:hidden"><div className="flex h-[76px] items-center justify-between border-b border-slate-100 px-5"><div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-950 text-maroon-300"><i className="fa-solid fa-microscope" /></span><b>Lab Incident</b></div><button onClick={() => setMobileOpen(false)} className="icon-button" aria-label="ปิดเมนู"><i className="fa-solid fa-xmark" /></button></div><Nav mobile /></motion.aside></>}</AnimatePresence>
+    <div className={cn('min-h-screen transition-[padding] duration-200 md:pl-[280px]', collapsed && 'md:pl-[84px]')}>
+      <header className="sticky top-0 z-30 flex h-[76px] items-center justify-between border-b border-slate-200/70 bg-white/85 px-4 backdrop-blur-xl sm:px-6 lg:px-8"><div className="flex min-w-0 items-center gap-3"><button onClick={() => setMobileOpen(true)} className="icon-button md:hidden" aria-label="เปิดเมนู"><i className="fa-solid fa-bars" /></button><div className="min-w-0"><div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.16em] text-maroon-700"><span>Risk intelligence</span><i className="fa-solid fa-chevron-right text-[8px] text-slate-300" /><span className="max-w-[180px] truncate text-slate-400">{activeItem.label}</span></div><h1 className="truncate text-base font-semibold text-slate-900 sm:text-lg">{activeItem.label}</h1></div></div><div className="flex items-center gap-2 sm:gap-4"><button onClick={() => setPaletteOpen(true)} className="command-trigger hidden items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-400 shadow-sm transition hover:border-maroon-200 hover:text-maroon-700 sm:inline-flex" title="Command Palette"><i className="fa-solid fa-magnifying-glass" /> ค้นหา <kbd className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[10px]">⌘K</kbd></button><span className="status-live hidden lg:inline-flex"><span className={cn('status-dot', !online && 'bg-amber-500')} /> {online ? 'Google Sheets synced' : 'Offline mode'}</span><Link to="/report" className="primary-button"><i className="fa-solid fa-plus" /><span className="hidden sm:inline">บันทึกใหม่</span></Link></div></header>
+      <main className="mx-auto min-h-[calc(100vh-76px)] max-w-[1440px] px-4 py-6 pb-28 sm:px-6 lg:px-8 lg:py-8">{children}<footer className="mt-10 border-t border-slate-200/70 pt-5 text-[11px] text-slate-400"><div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><p className="font-semibold text-slate-500">Powered by กลุ่มงานเทคนิคการแพทย์ โรงพยาบาลกงหรา</p><p className="mt-0.5">Created by Mr.Akaporn Sripanrod</p></div><div className="text-left sm:text-right"><p className="font-mono font-semibold text-slate-500">Version {deployVersion}</p><p className="font-mono text-[10px] text-slate-400">Build {deployRef}</p></div></div></footer></main>
     </div>
-  );
+    <Link to="/report" className="fixed bottom-20 right-5 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-maroon-700 text-white shadow-xl shadow-maroon-900/25 transition hover:-translate-y-1 hover:bg-maroon-800 focus:outline-none focus:ring-4 focus:ring-maroon-200 md:hidden" aria-label="บันทึกความเสี่ยงใหม่" title="บันทึกความเสี่ยงใหม่"><i className="fa-solid fa-plus text-lg" /></Link>
+    <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 bg-white/95 px-2 pb-[calc(.5rem+env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl md:hidden"><div className="mx-auto flex max-w-md justify-around">{mobileItems.map(item => <Link key={item.path} to={item.path} className={cn('flex min-w-0 flex-col items-center gap-1 rounded-lg px-3 py-1 text-[10px] font-medium transition', location.pathname === item.path ? 'text-maroon-700' : 'text-slate-400 hover:text-slate-700')}><i className={cn(item.icon, 'text-base')} /><span className="max-w-[72px] truncate">{item.label}</span></Link>)}</div></div>
+    <AnimatePresence>{paletteOpen && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-start justify-center bg-slate-950/35 px-4 pt-[12vh] backdrop-blur-sm" onClick={() => setPaletteOpen(false)}><motion.div initial={{ y: -10, scale: .98 }} animate={{ y: 0, scale: 1 }} onClick={event => event.stopPropagation()} className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-900/10"><div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4"><i className="fa-solid fa-magnifying-glass text-slate-400" /><input autoFocus value={query} onChange={event => { setQuery(event.target.value); if (event.target.value.length === 1) fetchIncidents().then(setIncidents).catch(() => undefined); }} placeholder="ค้นหา Incident หรือไปยังเมนู..." className="min-w-0 flex-1 text-sm outline-none" /><kbd className="rounded border border-slate-200 px-2 py-1 text-[10px] text-slate-400">ESC</kbd></div><div className="max-h-[55vh] overflow-y-auto p-2">{filteredItems.map(item => <button key={item.path} onClick={() => go(item.path)} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-maroon-50"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-500"><i className={item.icon} /></span><span><b className="block text-sm text-slate-800">{item.label}</b><small className="text-xs text-slate-400">{item.description}</small></span></button>)}{matchingIncidents.map(item => <button key={item.id} onClick={() => go('/data')} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-maroon-50"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-maroon-50 text-maroon-700"><i className="fa-solid fa-file-waveform" /></span><span><b className="block text-sm text-slate-800">{item.risk_type || 'Incident'}</b><small className="text-xs text-slate-400">{item.id} · {String(item.incident_date).slice(0, 10)}</small></span></button>)}{!filteredItems.length && !matchingIncidents.length && <p className="px-3 py-8 text-center text-sm text-slate-400">ไม่พบผลลัพธ์ ลองค้นหาด้วยชื่อเมนูหรือ Incident ID</p>}</div><div className="border-t border-slate-100 px-4 py-3 text-[11px] text-slate-400"><kbd className="mr-1 rounded border px-1">N</kbd> บันทึกใหม่ · <kbd className="mr-1 rounded border px-1">↑↓</kbd> เลือก · <kbd className="mr-1 rounded border px-1">Enter</kbd> เปิด</div></motion.div></motion.div>}</AnimatePresence>
+  </div>;
 }

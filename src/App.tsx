@@ -10,6 +10,8 @@ const ChartDashboard = lazy(() => import('./pages/ChartDashboard'));
 const DataTable = lazy(() => import('./pages/DataTable'));
 const AuditLog = lazy(() => import('./pages/AuditLog'));
 const NotificationSettings = lazy(() => import('./pages/NotificationSettings'));
+const OfflineDrafts = lazy(() => import('./pages/OfflineDrafts'));
+const SystemStatus = lazy(() => import('./pages/SystemStatus'));
 
 export default function App() {
   const [isAppLoading, setIsAppLoading] = useState(true);
@@ -73,6 +75,8 @@ export default function App() {
               <Route path="/data" element={<DataTable />} />
               <Route path="/audit" element={<AuditLog />} />
               <Route path="/settings/notifications" element={<NotificationSettings />} />
+              <Route path="/offline-drafts" element={<OfflineDrafts />} />
+              <Route path="/system-status" element={<SystemStatus />} />
             </Routes>
           </Suspense>
         </Layout>

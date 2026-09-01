@@ -1,0 +1,13 @@
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+
+const DRAFT_KEY = 'lab-incident-form-draft';
+const PENDING_KEY = 'lab-incident-pending-submit';
+export default function OfflineDrafts() {
+  const [draft, setDraft] = useState<any>(null);
+  const [pending, setPending] = useState<any>(null);
+  const refresh = () => { try { setDraft(JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null')); setPending(JSON.parse(localStorage.getItem(PENDING_KEY) || 'null')); } catch { setDraft(null); setPending(null); } };
+  useEffect(() => { refresh(); }, []);
+  const clear = (key: string) => { localStorage.removeItem(key); refresh(); };
+  return <div className="space-y-6"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-maroon-700">Offline workspace</p><h2 className="mt-1 text-3xl font-bold tracking-tight text-slate-950">Offline Drafts</h2><p className="mt-2 text-sm text-slate-500">ข้อมูลที่บันทึกไว้ในอุปกรณ์นี้ จะซิงก์เมื่อกลับมาออนไลน์</p></div><div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><i className="fa-solid fa-circle-info mr-2" />Draft ยังไม่ใช่ข้อมูลใน Google Sheets จนกว่าจะซิงก์สำเร็จ</div><div className="grid gap-5 lg:grid-cols-2">{[{ key: DRAFT_KEY, title: 'แบบร่างล่าสุด', icon: 'fa-solid fa-file-pen', value: draft, meta: draft ? `แก้ไขล่าสุด · ${draft.incident_date || 'ยังไม่ระบุวันที่'}` : 'ยังไม่มีแบบร่าง' }, { key: PENDING_KEY, title: 'รอซิงก์เข้าระบบ', icon: 'fa-solid fa-cloud-arrow-up', value: pending, meta: pending ? `เข้าคิวเมื่อ · ${new Date(pending.queuedAt).toLocaleString('th-TH')}` : 'ไม่มีรายการรอซิงก์' }].map(card => <div key={card.key} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-start justify-between"><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-maroon-50 text-maroon-700"><i className={card.icon} /></span>{card.value && <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-bold text-amber-700">รอดำเนินการ</span>}</div><h3 className="mt-5 text-lg font-bold text-slate-900">{card.title}</h3><p className="mt-1 text-xs text-slate-400">{card.meta}</p>{card.value ? <div className="mt-5 flex gap-2"><Link to="/report" className="primary-button text-xs"><i className="fa-solid fa-pen" /> เปิดแก้ไข</Link><button onClick={() => clear(card.key)} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-500 transition hover:border-rose-200 hover:text-rose-700">ลบรายการ</button></div> : <div className="mt-5 rounded-xl bg-slate-50 p-3 text-xs text-slate-400">เมื่อใช้งานแบบออฟไลน์ รายการจะแสดงที่นี่</div>}</div>)}</div></div>;
+}
