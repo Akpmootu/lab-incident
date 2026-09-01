@@ -325,7 +325,7 @@ export default function IncidentForm() {
       fetchRiskItemPopularity();
     } catch (error: any) {
       console.error("Error saving incident:", error);
-      localStorage.setItem(PENDING_KEY, JSON.stringify({ data: { ...formData, resolution_status: formData.resolution_status || "Open" }, queuedAt: new Date().toISOString() }));
+      localStorage.setItem(PENDING_KEY, JSON.stringify({ data: { ...formData, resolution_status: formData.resolution_status || "Open" }, queuedAt: new Date().toISOString(), status: isOffline ? "pending" : "error" }));
       setSaveStatus("error");
       setInlineError(isOffline ? "บันทึกแบบร่างไว้แล้ว ระบบจะส่งข้อมูลให้อัตโนมัติเมื่อกลับมาออนไลน์" : (error.message || "ไม่สามารถบันทึกข้อมูลได้"));
     } finally {
