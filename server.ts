@@ -29,7 +29,7 @@ async function startServer() {
           parse_mode: 'HTML',
           reply_markup: {
             inline_keyboard: [
-              [{ text: "🖥️ เปิดระบบ Admin", url: process.env.APP_URL || "http://localhost:3000" }]
+              [{ text: "เปิดระบบ Lab Incident", url: process.env.APP_URL || "https://lab-incident.vercel.app/" }]
             ]
           }
         }),
