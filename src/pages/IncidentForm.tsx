@@ -86,12 +86,21 @@ const RISK_ITEMS = {
 
 const IMPACT_LEVELS_CLINIC = ["A", "B", "C", "D", "E", "F", "G", "H", "I"];
 const IMPACT_LEVELS_NON_CLINIC = ["0", "1", "2", "3", "4"];
+const STEP_META = [
+  { num: 1, label: "ประเภทเหตุการณ์", description: "ระบุวันและลักษณะของเหตุการณ์" },
+  { num: 2, label: "รายการความเสี่ยง", description: "เลือกเหตุการณ์ที่ตรงกับบริบท" },
+  { num: 3, label: "รายละเอียด", description: "เล่าเหตุการณ์และการแก้ไขเบื้องต้น" },
+  { num: 4, label: "ระดับผลกระทบ", description: "ประเมินความรุนแรงและแนวทางป้องกัน" },
+  { num: 5, label: "ผู้รับผิดชอบ", description: "มอบหมายหน่วยงานและผู้ดูแล" },
+  { num: 6, label: "ตรวจสอบและบันทึก", description: "ตรวจทานข้อมูลก่อนส่งเข้าระบบ" },
+];
 
 export default function IncidentForm() {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [errors, setErrors] = useState<Record<string, boolean>>({});
+  const [inlineError, setInlineError] = useState("");
   const [riskItemSearch, setRiskItemSearch] = useState("");
   const [riskItemPopularity, setRiskItemPopularity] = useState<
     Record<string, number>
@@ -135,6 +144,11 @@ export default function IncidentForm() {
   }, []);
 
   useEffect(() => {
+    const firstField = document.querySelector(`[data-step-field="${step}"]`) as HTMLElement | null;
+    if (firstField) window.setTimeout(() => firstField.focus(), 180);
+  }, [step]);
+
+  useEffect(() => {
     if (!hydrated.current) return;
     localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
     setDraftSavedAt(new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }));
@@ -172,6 +186,7 @@ export default function IncidentForm() {
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: false }));
     }
+    setInlineError("");
   };
 
   const handleRadioChange = (item: string) => {
@@ -215,15 +230,28 @@ export default function IncidentForm() {
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       isValid = false;
-      Swal.fire({
-        title: "ข้อมูลไม่ครบถ้วน",
-        text: "กรุณากรอกข้อมูลในช่องที่กำหนดให้ครบถ้วน",
-        icon: "warning",
-        confirmButtonColor: "#f59e0b",
-      });
+      setInlineError(`กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน (${Object.keys(newErrors).length} ช่อง)`);
+    } else {
+      setInlineError("");
     }
 
     return isValid;
+  };
+
+  const missingForStep = (stepNumber: number) => {
+    if (stepNumber === 1) return [!formData.incident_date, !formData.risk_type, formData.risk_type === "Clinic" && !formData.process_type].filter(Boolean).length;
+    if (stepNumber === 2) return [formData.risk_items.length === 0 && !formData.other_risk_item].filter(Boolean).length;
+    if (stepNumber === 3) return [!formData.incident_details, !formData.initial_response].filter(Boolean).length;
+    if (stepNumber === 4) return [!formData.impact_level, !formData.group_type, !formData.guideline].filter(Boolean).length;
+    if (stepNumber === 5) return [!formData.responsible_person, !formData.causing_department].filter(Boolean).length;
+    return 0;
+  };
+
+  const saveDraftNow = () => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
+    setDraftSavedAt(new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }));
+    setSaveStatus("saved");
+    window.setTimeout(() => setSaveStatus("idle"), 1800);
   };
 
   const nextStep = () => {
@@ -354,14 +382,7 @@ export default function IncidentForm() {
           style={{ width: `${((step - 1) / 5) * 100}%` }}
         ></div>
 
-        {[
-          { num: 1, label: "ทั่วไป" },
-          { num: 2, label: "ความเสี่ยง" },
-          { num: 3, label: "รายละเอียด" },
-          { num: 4, label: "ผลกระทบ" },
-          { num: 5, label: "รับผิดชอบ" },
-          { num: 6, label: "สรุป" }
-        ].map((s) => (
+        {STEP_META.map((s) => (
           <div key={s.num} className="relative z-10 flex flex-col items-center gap-2">
             <div
               className={cn(
@@ -380,6 +401,7 @@ export default function IncidentForm() {
               step === s.num ? "text-maroon-700 font-bold" : step > s.num ? "text-slate-600" : "text-slate-400"
             )}>
               {s.label}
+              {s.num < 6 && missingForStep(s.num) > 0 && <span className="ml-1 text-[10px] text-amber-600">· ค้าง {missingForStep(s.num)}</span>}
             </span>
           </div>
         ))}
@@ -411,6 +433,11 @@ export default function IncidentForm() {
 
       <div className="p-6 md:p-8">
         {renderStepIndicator()}
+        <div className="mb-6 flex items-end justify-between gap-4 border-b border-slate-100 pb-5">
+          <div><p className="text-xs font-bold uppercase tracking-[.16em] text-maroon-700">ขั้นตอนที่ {step} จาก 6</p><h3 className="mt-1 text-xl font-bold text-slate-900">{STEP_META[step - 1].label}</h3><p className="mt-1 text-sm text-slate-500">{STEP_META[step - 1].description}</p></div>
+          {step < 6 && <span className={cn("rounded-full px-3 py-1.5 text-xs font-bold", missingForStep(step) ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700")}>{missingForStep(step) ? `ค้าง ${missingForStep(step)} ช่อง` : "ครบแล้ว"}</span>}
+        </div>
+        {inlineError && <div className="mb-6 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800" role="alert"><i className="fa-solid fa-circle-exclamation" />{inlineError}</div>}
 
         <AnimatePresence mode="wait">
           <motion.div
@@ -434,6 +461,7 @@ export default function IncidentForm() {
                     <input
                       type="date"
                       id="incident_date"
+                      data-step-field="1"
                       value={formData.incident_date}
                       onChange={(e) =>
                         handleInputChange("incident_date", e.target.value)
@@ -572,12 +600,14 @@ export default function IncidentForm() {
                   <i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
                   <input
                     type="text"
+                    data-step-field="2"
                     placeholder="ค้นหารายการความเสี่ยง..."
                     value={riskItemSearch}
                     onChange={(e) => setRiskItemSearch(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-maroon-500 focus:ring-1 focus:ring-maroon-500 transition-all text-sm"
                   />
                 </div>
+                {Object.entries(riskItemPopularity).filter(([, count]) => Number(count) > 0).slice(0, 3).length > 0 && <p className="text-xs text-slate-500"><i className="fa-solid fa-sparkles mr-1 text-amber-500" />แนะนำจากรายการที่พบบ่อย — รายการด้านล่างเรียงตามความถี่การบันทึก</p>}
 
                 <div
                   className={cn(
@@ -658,6 +688,7 @@ export default function IncidentForm() {
                   >
                     <textarea
                       id="incident_details"
+                      data-step-field="3"
                       rows={4}
                       value={formData.incident_details}
                       onChange={(e) =>
@@ -674,6 +705,7 @@ export default function IncidentForm() {
                     <i className="fa-solid fa-circle-info mr-1"></i>
                     อธิบายเหตุการณ์ที่เกิดขึ้นอย่างชัดเจน (ใคร ทำอะไร ที่ไหน อย่างไร)
                   </p>
+                  <div className="flex justify-end px-2 text-[11px] font-medium text-slate-400">{formData.incident_details.length} / 1000 ตัวอักษร</div>
                 </div>
 
                 <div className="space-y-1">
@@ -778,6 +810,7 @@ export default function IncidentForm() {
                       </button>
                     ))}
                   </div>
+                  {formData.group_type === "Near Miss" && <div className="mt-3 rounded-xl border border-violet-100 bg-violet-50 px-4 py-3 text-xs leading-5 text-violet-800"><i className="fa-solid fa-lightbulb mr-2" /><b>คำแนะนำ:</b> บันทึกจุดที่ตรวจพบก่อนเกิดผลกระทบ และระบุแนวทางป้องกันเพื่อให้ทีมเรียนรู้จากเหตุการณ์นี้</div>}
                 </div>
 
                 <div className="space-y-1">
@@ -1048,7 +1081,8 @@ export default function IncidentForm() {
           </motion.div>
         </AnimatePresence>
 
-        <div className="mt-12 flex justify-between items-center pt-6 border-t border-slate-100">
+        <div className="mt-12 flex flex-wrap justify-between items-center gap-3 pt-6 border-t border-slate-100">
+          <button onClick={saveDraftNow} type="button" className="rounded-xl border border-slate-200 px-4 py-3 text-xs font-bold text-slate-600 transition hover:border-maroon-200 hover:bg-maroon-50 hover:text-maroon-700 focus:ring-4 focus:ring-maroon-500/10" title="บันทึกแบบร่างไว้ในอุปกรณ์นี้"><i className="fa-solid fa-bookmark mr-2" />บันทึกแบบร่าง{draftSavedAt ? ` · ${draftSavedAt}` : ""}</button>
           <button
             onClick={prevStep}
             disabled={step === 1 || isSubmitting}
