@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { fetchIncidents, updateIncident, deleteIncident } from '../lib/dataApi';
 import { useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { formatDateTH } from '../lib/dateUtils';
 import dayjs from 'dayjs';
@@ -27,6 +28,7 @@ interface Incident {
 
 export default function DataTable() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -715,7 +717,7 @@ export default function DataTable() {
                           <td className="px-4 py-3 text-center">
                             <div className="flex items-center justify-center gap-2">
                               <button 
-                                onClick={() => handleViewDetails(incident)}
+                                onClick={() => navigate(`/incident/${encodeURIComponent(incident.id)}`)}
                                 className="w-8 h-8 rounded-full bg-maroon-50 text-maroon-600 hover:bg-maroon-100 flex items-center justify-center transition-colors"
                                 title="ดูรายละเอียด"
                                 aria-label={`ดูรายละเอียดอุบัติการณ์วันที่ ${formatDateTH(incident.incident_date)}`}

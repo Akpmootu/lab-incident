@@ -12,6 +12,7 @@ const AuditLog = lazy(() => import('./pages/AuditLog'));
 const NotificationSettings = lazy(() => import('./pages/NotificationSettings'));
 const OfflineDrafts = lazy(() => import('./pages/OfflineDrafts'));
 const SystemStatus = lazy(() => import('./pages/SystemStatus'));
+const IncidentDetail = lazy(() => import('./pages/IncidentDetail'));
 
 export default function App() {
   const [isAppLoading, setIsAppLoading] = useState(true);
@@ -77,6 +78,7 @@ export default function App() {
               <Route path="/settings/notifications" element={<NotificationSettings />} />
               <Route path="/offline-drafts" element={<OfflineDrafts />} />
               <Route path="/system-status" element={<SystemStatus />} />
+              <Route path="/incident/:id" element={<IncidentDetail />} />
             </Routes>
           </Suspense>
         </Layout>
