@@ -36,12 +36,12 @@ function getCredentials() {
   const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
   const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
   const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY;
+  if (raw) return parseCredentials(raw);
   if (email && privateKey) {
     const key = privateKey.replace(/\\u([0-9a-f]{4})/gi, (_, code) => String.fromCharCode(parseInt(code, 16))).replace(/\\+n/g, '\n').replace(/\\+r/g, '').replace(/\r/g, '').trim();
     const body = key.replace('-----BEGIN PRIVATE KEY-----', '').replace('-----END PRIVATE KEY-----', '').replace(/\s+/g, '');
     return { client_email: email, private_key: `-----BEGIN PRIVATE KEY-----\n${body.match(/.{1,64}/g)?.join('\n') || body}\n-----END PRIVATE KEY-----\n`, project_id: 'today-prayer-app' };
   }
-  if (raw) return parseCredentials(raw);
   throw configError();
 }
 
