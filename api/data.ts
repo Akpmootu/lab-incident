@@ -1,11 +1,13 @@
 import { GoogleAuth } from 'google-auth-library';
 import { randomUUID } from 'node:crypto';
 
-const INCIDENT_HEADERS = ['id', 'incident_date', 'risk_type', 'process_type', 'risk_items', 'other_risk_item', 'incident_details', 'initial_response', 'impact_level', 'group_type', 'guideline', 'created_at', 'causing_department', 'responsible_person'] as const;
+const INCIDENT_HEADERS = ['id', 'incident_date', 'risk_type', 'process_type', 'risk_items', 'other_risk_item', 'incident_details', 'initial_response', 'impact_level', 'group_type', 'guideline', 'created_at', 'causing_department', 'responsible_person', 'resolution_status'] as const;
 const HISTORY_HEADERS = ['id', 'incident_id', 'edited_at', 'edited_by', 'changes'] as const;
 const SHEET_ID = process.env.GOOGLE_SHEET_ID;
-const INCIDENT_RANGE = 'Incidents!A:N';
+const INCIDENT_RANGE = 'Incidents!A:O';
 const HISTORY_RANGE = "'Edit History'!A:E";
+const SETTINGS_RANGE = 'Settings!A:B';
+const DEFAULT_SETTINGS = { enabled: true, notifyNearMiss: true, notifyMiss: true, notifyNoHarm: false, dailyReminder: true };
 
 type Row = Record<string, any>;
 
@@ -96,8 +98,31 @@ async function clearRange(range: string) {
   return sheetsRequest(`/values/${encodeURIComponent(range)}:clear`, { method: 'POST', body: JSON.stringify({}) });
 }
 
+async function ensureSettingsSheet() {
+  try { await getValues(SETTINGS_RANGE); } catch {
+    await sheetsRequest(':batchUpdate', { method: 'POST', body: JSON.stringify({ requests: [{ addSheet: { properties: { title: 'Settings' } } }] }) });
+    await updateRange(SETTINGS_RANGE, [['key', 'value'], ...Object.entries(DEFAULT_SETTINGS)]);
+  }
+}
+
+async function getSettings() {
+  await ensureSettingsSheet();
+  const result = await getValues(SETTINGS_RANGE);
+  return { ...DEFAULT_SETTINGS, ...Object.fromEntries((result.values || []).slice(1).filter((row: any[]) => row[0]).map((row: any[]) => [row[0], row[1] === true || row[1] === 'true'])) };
+}
+
+async function saveSettings(settings: Record<string, boolean>) {
+  await ensureSettingsSheet();
+  await updateRange(SETTINGS_RANGE, [['key', 'value'], ...Object.entries({ ...DEFAULT_SETTINGS, ...settings })]);
+  return getSettings();
+}
+
 export default async function handler(req: any, res: any) {
   try {
+    if (req.query?.view === 'settings') {
+      if (req.method === 'GET') return res.status(200).json({ data: await getSettings() });
+      if (req.method === 'PUT' || req.method === 'PATCH') return res.status(200).json({ data: await saveSettings(req.body || {}) });
+    }
     if (req.method === 'GET') {
       if (req.query?.view === 'history') {
         const result = await getValues(HISTORY_RANGE);
@@ -109,7 +134,7 @@ export default async function handler(req: any, res: any) {
 
     if (req.method === 'POST') {
       const input = req.body || {};
-      const incident = { ...input, id: input.id || randomUUID(), created_at: input.created_at || new Date().toISOString() };
+      const incident = { ...input, id: input.id || randomUUID(), created_at: input.created_at || new Date().toISOString(), resolution_status: input.resolution_status || 'Open' };
       await appendRange(INCIDENT_RANGE, [objectToRow(incident, INCIDENT_HEADERS)]);
       await appendRange(HISTORY_RANGE, [[randomUUID(), incident.id, new Date().toISOString(), 'System', JSON.stringify({ action: 'created' })]]);
       return res.status(201).json({ data: incident });

@@ -1,7 +1,15 @@
 import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { fetchIncidents, IncidentRecord } from '../lib/dataApi';
 
 export default function LandingPage() {
+  const [incidents, setIncidents] = useState<IncidentRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => { fetchIncidents().then(setIncidents).catch(console.error).finally(() => setLoading(false)); }, []);
+  const open = incidents.filter(item => !item.resolution_status || item.resolution_status === 'Open').length;
+  const nearMiss = incidents.filter(item => item.group_type === 'Near Miss').length;
+  const verified = incidents.filter(item => item.resolution_status === 'Verified').length;
   return (
     <div className="space-y-12 pb-12">
       {/* Hero Section */}
@@ -69,6 +77,10 @@ export default function LandingPage() {
             <i className="fa-solid fa-microscope text-8xl text-white drop-shadow-lg"></i>
           </motion.div>
         </div>
+      </section>
+
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {[['อุบัติการณ์ทั้งหมด', incidents.length, 'fa-solid fa-chart-line'], ['Near Miss', nearMiss, 'fa-solid fa-shield-heart'], ['ประเด็นที่ต้องติดตาม', open, 'fa-solid fa-triangle-exclamation'], ['ปิดประเด็นแล้ว', verified, 'fa-solid fa-circle-check']].map(([label, value, icon]) => <div key={String(label)} className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100"><div className="flex items-center justify-between"><span className="text-sm font-medium text-slate-500">{label}</span><i className={`${icon} text-maroon-600`} /></div><p className="mt-3 text-3xl font-bold text-slate-900">{loading ? '—' : value}</p><p className="mt-1 text-xs text-slate-400">ข้อมูลภาพรวมจาก Google Sheets</p></div>)}
       </section>
 
       {/* Guide Section */}

@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Swal from "sweetalert2";
-import { createIncident, fetchIncidentPopularity } from "../lib/dataApi";
+import { createIncident, fetchIncidentPopularity, fetchNotificationSettings } from "../lib/dataApi";
 import { cn } from "../lib/utils";
 
 const RISK_TYPES = [
@@ -98,6 +98,11 @@ export default function IncidentForm() {
   >({});
   const [personCounts, setPersonCounts] = useState<Record<string, number>>({});
   const [deptCounts, setDeptCounts] = useState<Record<string, number>>({});
+  const [isOffline, setIsOffline] = useState(() => !navigator.onLine);
+  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
+  const hydrated = useRef(false);
+  const DRAFT_KEY = "lab-incident-form-draft";
+  const PENDING_KEY = "lab-incident-pending-submit";
 
   const [formData, setFormData] = useState({
     incident_date: new Date().toISOString().split("T")[0],
@@ -112,10 +117,44 @@ export default function IncidentForm() {
     guideline: "",
     responsible_person: "",
     causing_department: "",
+    resolution_status: "Open" as "Open" | "In Progress" | "Resolved" | "Verified",
   });
 
   useEffect(() => {
     fetchRiskItemPopularity();
+    try {
+      const draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null");
+      if (draft) setFormData((prev) => ({ ...prev, ...draft }));
+    } catch { /* ignore malformed local draft */ }
+    hydrated.current = true;
+    const online = () => setIsOffline(false);
+    const offline = () => setIsOffline(true);
+    window.addEventListener("online", online);
+    window.addEventListener("offline", offline);
+    return () => { window.removeEventListener("online", online); window.removeEventListener("offline", offline); };
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated.current) return;
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
+    setDraftSavedAt(new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }));
+  }, [formData]);
+
+  useEffect(() => {
+    const flushPending = async () => {
+      if (!navigator.onLine) return;
+      try {
+        const pending = JSON.parse(localStorage.getItem(PENDING_KEY) || "null");
+        if (!pending?.data) return;
+        await createIncident(pending.data);
+        localStorage.removeItem(PENDING_KEY);
+        localStorage.removeItem(DRAFT_KEY);
+        setSaveStatus("saved");
+      } catch { /* keep pending until the next online event */ }
+    };
+    window.addEventListener("online", flushPending);
+    flushPending();
+    return () => window.removeEventListener("online", flushPending);
   }, []);
 
   const fetchRiskItemPopularity = async () => {
@@ -217,7 +256,10 @@ export default function IncidentForm() {
         guideline: formData.guideline,
         responsible_person: formData.responsible_person,
         causing_department: formData.causing_department,
+        resolution_status: formData.resolution_status,
       });
+      localStorage.removeItem(DRAFT_KEY);
+      localStorage.removeItem(PENDING_KEY);
       setSaveStatus("saved");
 
       // 2. Send Telegram Notification via Backend
@@ -231,7 +273,7 @@ export default function IncidentForm() {
 📝 <b>รายละเอียด:</b> ${formData.incident_details.substring(0, 100)}${formData.incident_details.length > 100 ? "..." : ""}
       `;
 
-      const notificationSettings = JSON.parse(localStorage.getItem("lab-incident-notification-settings") || "{\"enabled\":true,\"notifyNearMiss\":true,\"notifyMiss\":true,\"notifyNoHarm\":false}");
+      const notificationSettings = await fetchNotificationSettings().catch(() => ({ enabled: true, notifyNearMiss: true, notifyMiss: true, notifyNoHarm: false }));
       const shouldNotify = notificationSettings.enabled && ((formData.group_type === "Near Miss" && notificationSettings.notifyNearMiss) || (formData.group_type === "Miss" && notificationSettings.notifyMiss) || (formData.group_type === "No Harm" && notificationSettings.notifyNoHarm));
       if (shouldNotify) await fetch("/api/notify", {
         method: "POST",
@@ -261,18 +303,20 @@ export default function IncidentForm() {
         guideline: "",
         responsible_person: "",
         causing_department: "",
+        resolution_status: "Open",
       });
       setStep(1);
       setRiskItemSearch("");
       fetchRiskItemPopularity();
     } catch (error: any) {
       console.error("Error saving incident:", error);
+      localStorage.setItem(PENDING_KEY, JSON.stringify({ data: { ...formData, resolution_status: formData.resolution_status || "Open" }, queuedAt: new Date().toISOString() }));
       setSaveStatus("error");
       Swal.fire({
-        title: "เกิดข้อผิดพลาด! ❌",
-        text: error.message || "ไม่สามารถบันทึกข้อมูลได้",
-        icon: "error",
-        confirmButtonColor: "#ef4444",
+        title: isOffline ? "บันทึกแบบร่างไว้แล้ว" : "เกิดข้อผิดพลาด! ❌",
+        text: isOffline ? "ระบบจะส่งข้อมูลให้อัตโนมัติเมื่อกลับมาออนไลน์" : (error.message || "ไม่สามารถบันทึกข้อมูลได้"),
+        icon: isOffline ? "info" : "error",
+        confirmButtonColor: isOffline ? "#800000" : "#ef4444",
       });
     } finally {
       setIsSubmitting(false);
@@ -359,6 +403,10 @@ export default function IncidentForm() {
         <p className="text-maroon-100 mt-1 opacity-90">
           กลุ่มงานเทคนิคการแพทย์ โรงพยาบาลกงหรา
         </p>
+      </div>
+      <div className={cn("mx-6 mt-5 flex flex-wrap items-center justify-between gap-2 rounded-xl px-4 py-3 text-xs font-medium md:mx-8", isOffline ? "bg-amber-50 text-amber-800 ring-1 ring-amber-200" : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100")} role="status">
+        <span><i className={cn("mr-2", isOffline ? "fa-solid fa-cloud-arrow-down" : "fa-solid fa-cloud-check")} />{isOffline ? "ออฟไลน์: ระบบจะเก็บแบบร่างไว้ในเครื่อง" : "ออนไลน์: พร้อมบันทึกลง Google Sheets"}</span>
+        {draftSavedAt && <span className="opacity-75">Draft ล่าสุด {draftSavedAt}</span>}
       </div>
 
       <div className="p-6 md:p-8">

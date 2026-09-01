@@ -12,7 +12,6 @@ import * as XLSX from "xlsx";
 import Swal from "sweetalert2";
 import html2canvas from "html2canvas";
 import ExcelJS from "exceljs";
-import { saveAs } from "file-saver";
 import { PageSkeleton } from "../components/Skeleton";
 
 export default function Dashboard() {
@@ -121,10 +120,11 @@ export default function Dashboard() {
     ];
   }
 
-  const exportToExcel = async () => {
+  const handleExportExcel = async () => {
     setIsExporting(true);
-    try {
-      const workbook = new ExcelJS.Workbook();
+      try {
+        const { saveAs } = await import("file-saver");
+        const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("สรุปอุบัติการณ์");
 
       // Header
@@ -350,7 +350,7 @@ export default function Dashboard() {
             บันทึกรูปภาพ
           </button>
           <button
-            onClick={exportToExcel}
+            onClick={handleExportExcel}
             disabled={isExporting}
             className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center gap-2 shadow-sm"
           >

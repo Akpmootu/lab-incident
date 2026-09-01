@@ -13,6 +13,7 @@ export interface IncidentRecord {
   guideline: string;
   responsible_person: string | null;
   causing_department: string | null;
+  resolution_status?: 'Open' | 'In Progress' | 'Resolved' | 'Verified';
 }
 
 async function request<T>(options: RequestInit = {}, query = ''): Promise<T> {
@@ -35,6 +36,16 @@ export interface AuditEvent { id: string; incident_id: string; edited_at: string
 export async function fetchAuditLog(): Promise<AuditEvent[]> {
   const result = await request<{ data: AuditEvent[] }>({}, '?view=history');
   return result.data || [];
+}
+
+export interface NotificationSettings { enabled: boolean; notifyNearMiss: boolean; notifyMiss: boolean; notifyNoHarm: boolean; dailyReminder: boolean }
+export async function fetchNotificationSettings(): Promise<NotificationSettings> {
+  const result = await request<{ data: NotificationSettings }>({}, '?view=settings');
+  return result.data;
+}
+export async function saveNotificationSettings(settings: NotificationSettings): Promise<NotificationSettings> {
+  const result = await request<{ data: NotificationSettings }>({ method: 'PUT', body: JSON.stringify(settings) }, '?view=settings');
+  return result.data;
 }
 
 export async function createIncident(data: Omit<IncidentRecord, 'id' | 'created_at'>) {

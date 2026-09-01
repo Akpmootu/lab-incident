@@ -5,7 +5,6 @@ import { formatDateTH } from '../lib/dateUtils';
 import dayjs from 'dayjs';
 import Swal from 'sweetalert2';
 import ExcelJS from 'exceljs';
-import { saveAs } from 'file-saver';
 
 interface Incident {
   id: string;
@@ -22,6 +21,7 @@ interface Incident {
   guideline: string;
   responsible_person: string | null;
   causing_department: string | null;
+  resolution_status?: 'Open' | 'In Progress' | 'Resolved' | 'Verified';
 }
 
 export default function DataTable() {
@@ -91,6 +91,7 @@ export default function DataTable() {
           <div><span class="text-slate-500">ระดับ:</span> <span class="font-medium text-red-600">${incident.impact_level}</span></div>
           <div><span class="text-slate-500">กลุ่ม:</span> <span class="font-medium">${incident.group_type}</span></div>
           <div><span class="text-slate-500">ผู้รับผิดชอบ:</span> <span class="font-medium">${incident.responsible_person || '-'}</span></div>
+          <div><span class="text-slate-500">สถานะ:</span> <span class="font-medium">${incident.resolution_status || 'Open'}</span></div>
           <div class="col-span-2"><span class="text-slate-500">หน่วยงานที่เกิดเหตุ:</span> <span class="font-medium">${incident.causing_department || '-'}</span></div>
         </div>
         <div>
@@ -278,6 +279,7 @@ export default function DataTable() {
       if (password === 'LAB11414@2569') {
         setIsExporting(true);
         try {
+          const { saveAs } = await import('file-saver');
           const workbook = new ExcelJS.Workbook();
           const worksheet = workbook.addWorksheet('Incidents');
 
@@ -292,6 +294,7 @@ export default function DataTable() {
             { header: 'กลุ่ม', key: 'group_type', width: 15 },
             { header: 'ผู้รับผิดชอบ', key: 'responsible_person', width: 20 },
             { header: 'หน่วยงาน', key: 'causing_department', width: 20 },
+            { header: 'สถานะปิดประเด็น', key: 'resolution_status', width: 18 },
             { header: 'รายละเอียด', key: 'incident_details', width: 50 },
             { header: 'การแก้ไขเบื้องต้น', key: 'initial_response', width: 50 },
             { header: 'แนวทางปฏิบัติ', key: 'guideline', width: 50 },
@@ -309,6 +312,7 @@ export default function DataTable() {
               group_type: incident.group_type,
               responsible_person: incident.responsible_person || '-',
               causing_department: incident.causing_department || '-',
+              resolution_status: incident.resolution_status || 'Open',
               incident_details: incident.incident_details,
               initial_response: incident.initial_response,
               guideline: incident.guideline,
@@ -468,6 +472,7 @@ export default function DataTable() {
                   <th className="px-4 py-3">ประเภท</th>
                   <th className="px-4 py-3">รายการความเสี่ยง</th>
                   <th className="px-4 py-3 text-center">ระดับ</th>
+                  <th className="px-4 py-3">สถานะ</th>
                   <th className="px-4 py-3">ผู้รับผิดชอบ</th>
                   <th className="px-4 py-3 text-center">จัดการ</th>
                 </tr>
@@ -552,6 +557,12 @@ export default function DataTable() {
                               >
                                 <option value="Miss">Miss</option>
                                 <option value="Near Miss">Near Miss</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-slate-500 mb-1">สถานะการปิดประเด็น</label>
+                              <select value={editData.resolution_status || 'Open'} onChange={e => setEditData({...editData, resolution_status: e.target.value as Incident['resolution_status']})} className="w-full p-2 border rounded-lg text-sm">
+                                {['Open', 'In Progress', 'Resolved', 'Verified'].map(status => <option key={status} value={status}>{status}</option>)}
                               </select>
                             </div>
                             <div>
@@ -692,6 +703,7 @@ export default function DataTable() {
                               );
                             })()}
                           </td>
+                          <td className="px-4 py-3"><span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", incident.resolution_status === 'Verified' ? 'bg-emerald-100 text-emerald-700' : incident.resolution_status === 'Resolved' ? 'bg-sky-100 text-sky-700' : incident.resolution_status === 'In Progress' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600')}>{incident.resolution_status || 'Open'}</span></td>
                           <td className="px-4 py-3">
                             {incident.responsible_person || '-'}
                           </td>
