@@ -46,7 +46,7 @@ export default function Layout({ children }: { children: ReactNode }) {
     </Link>; })}</div>)}
   </nav>;
 
-  return <div className="min-h-screen bg-[#f6f8f7] text-slate-900">
+  return <div className="min-h-screen bg-canvas text-ink">
     <aside className={cn('fixed inset-y-0 left-0 z-40 hidden border-r border-slate-200/80 bg-white/95 backdrop-blur-xl transition-[width] duration-200 md:flex md:flex-col', collapsed ? 'w-[84px]' : 'w-[280px]')}>
       <div className={cn('flex h-[76px] items-center border-b border-slate-100 px-4', collapsed ? 'justify-center' : 'justify-between')}><Link to="/" className={cn('flex items-center gap-3', collapsed && 'justify-center')} title="กลับหน้าแรก"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-maroon-300 shadow-lg shadow-slate-900/15"><i className="fa-solid fa-microscope" /></span>{!collapsed && <span><span className="block text-sm font-bold tracking-tight text-slate-950">Lab Incident</span><span className="block text-[10px] font-medium uppercase tracking-[.16em] text-slate-400">Kongrha Laboratory</span></span>}</Link>{!collapsed && <button onClick={() => setCollapsed(true)} className="icon-button" aria-label="ย่อเมนู" title="ย่อเมนู"><i className="fa-solid fa-sidebar" /></button>}</div>
       {collapsed && <button onClick={() => setCollapsed(false)} className="mx-auto mt-4 icon-button" aria-label="ขยายเมนู" title="ขยายเมนู"><i className="fa-solid fa-sidebar-flip" /></button>}<div className="flex-1 overflow-y-auto"><Nav /></div>
