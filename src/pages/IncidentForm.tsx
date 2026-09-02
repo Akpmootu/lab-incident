@@ -384,7 +384,7 @@ export default function IncidentForm() {
               step === s.num ? "text-maroon-700 font-bold" : step > s.num ? "text-slate-600" : "text-slate-400"
             )}>
               {s.label}
-              {s.num < 6 && missingForStep(s.num) > 0 && <span className="ml-1 text-[10px] text-amber-600">· ค้าง {missingForStep(s.num)}</span>}
+              {s.num < 6 && missingForStep(s.num) > 0 && <span className="mt-0.5 block text-[10px] text-amber-600">ค้าง {missingForStep(s.num)}</span>}
             </span>
           </div>
         ))}
