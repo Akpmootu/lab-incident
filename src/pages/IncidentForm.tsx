@@ -305,12 +305,12 @@ export default function IncidentForm() {
       // 2. Send Telegram Notification via Backend
       const message = `
 🚨 <b>แจ้งเตือนอุบัติการณ์ใหม่</b>
-📅 <b>วันที่:</b> ${new Date(formData.incident_date).toLocaleDateString("th-TH", { year: "numeric", month: "long", day: "numeric" })}
-🏥 <b>ประเภท:</b> ${formData.risk_type} ${formData.process_type ? `(${formData.process_type})` : ""}
-⚠️ <b>ความรุนแรง:</b> ระดับ ${formData.impact_level} (${formData.group_type})
-🏢 <b>หน่วยงานที่เกิดเหตุ:</b> ${formData.causing_department}
-👤 <b>ผู้รับผิดชอบ:</b> ${formData.responsible_person}
-📝 <b>รายละเอียด:</b> ${formData.incident_details.substring(0, 100)}${formData.incident_details.length > 100 ? "..." : ""}
+• 📅 <b>วันที่:</b> ${new Date(formData.incident_date).toLocaleDateString("th-TH", { year: "numeric", month: "long", day: "numeric" })}
+• 🏥 <b>ประเภท:</b> ${formData.risk_type} ${formData.process_type ? `(${formData.process_type})` : ""}
+• ⚠️ <b>ความรุนแรง:</b> ระดับ ${formData.impact_level} (${formData.group_type})
+• 🏢 <b>หน่วยงานที่เกิดเหตุ:</b> ${formData.causing_department}
+• 👤 <b>ผู้รับผิดชอบ:</b> ${formData.responsible_person}
+• 📝 <b>รายละเอียด:</b> ${formData.incident_details.substring(0, 100)}${formData.incident_details.length > 100 ? "..." : ""}
       `;
 
       const notificationSettings = await fetchNotificationSettings().catch(() => ({ enabled: true, notifyNearMiss: true, notifyMiss: true, notifyNoHarm: false }));

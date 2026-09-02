@@ -126,6 +126,15 @@ async function saveSettings(settings: Record<string, boolean>) {
   return getSettings();
 }
 
+async function sendTelegramMessage(message: string) {
+  const botToken = (process.env.TELEGRAM_BOT_TOKEN || '').trim().replace(/^bot/i, '');
+  const chatId = (process.env.TELEGRAM_CHAT_ID || '').trim();
+  if (!botToken || !chatId) return;
+  const appUrl = `${(process.env.APP_URL || 'https://lab-incident.vercel.app').replace(/\/+$/, '')}/`;
+  const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: 'เปิดระบบ Lab Incident', url: appUrl }]] } }) });
+  if (!response.ok) { const result = await response.json(); throw new Error(result.description || 'Telegram send failed'); }
+}
+
 export default async function handler(req: any, res: any) {
   try {
     if (req.query?.view === 'settings') {
@@ -181,6 +190,9 @@ export default async function handler(req: any, res: any) {
       const changes: Row = {};
       for (const key of INCIDENT_HEADERS) if (JSON.stringify(original[key]) !== JSON.stringify(updated[key])) changes[key] = { old: original[key], new: updated[key] };
       if (Object.keys(changes).length) await appendRange(HISTORY_RANGE, [[randomUUID(), id, new Date().toISOString(), 'Admin', JSON.stringify(changes)]]);
+      if (requestedStatus === 'Resolved') {
+        try { const settings = await getSettings(); if (settings.enabled) await sendTelegramMessage(`✅ <b>ปิดประเด็นเพื่อรอการ Verify</b>\n\n• <b>Incident:</b> ${id}\n• <b>สถานะ:</b> Resolved\n• <b>ผู้รับผิดชอบ:</b> ${updated.responsible_person || '-'}\n• <b>หลักฐานการแก้ไข:</b> ${updated.resolution_note || '-'}\n\n🔎 กรุณาตรวจสอบและดำเนินการ Verify`); } catch (notificationError) { console.error('Resolved Telegram notification error:', notificationError); }
+      }
       return res.status(200).json({ data: updated });
     }
 

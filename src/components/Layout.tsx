@@ -16,6 +16,7 @@ const mobileItems = [{ path: '/', icon: 'fa-solid fa-grid-2', label: 'ภาพ�
 export default function Layout({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileNavVisible, setMobileNavVisible] = useState(true);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [incidents, setIncidents] = useState<IncidentRecord[]>([]);
@@ -24,7 +25,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const configuredVersion = import.meta.env.VITE_DEPLOY_VERSION || '';
-  const deployVersion = /^\d+\.\d+\.\d+$/.test(configuredVersion) ? configuredVersion : '1.1.0';
+  const deployVersion = /^\d+\.\d+\.\d+$/.test(configuredVersion) ? configuredVersion : '1.2.0';
   const deployRef = import.meta.env.VITE_DEPLOY_REF || 'local';
   const activeItem = allItems.find(item => item.path.split('?')[0] === location.pathname) ?? { label: location.pathname === '/' ? 'ภาพรวม' : 'Workspace', icon: 'fa-solid fa-grid-2' };
   const filteredItems = useMemo(() => allItems.filter(item => `${item.label} ${item.description}`.toLowerCase().includes(query.toLowerCase())).slice(0, 6), [query]);
@@ -38,6 +39,13 @@ export default function Layout({ children }: { children: ReactNode }) {
     fetchIncidents().then(items => { setIncidents(items); setUnresolved(items.filter(item => !item.resolution_status || item.resolution_status === 'Open' || item.resolution_status === 'In Progress').length); }).catch(() => undefined);
     return () => { window.removeEventListener('online', update); window.removeEventListener('offline', update); window.removeEventListener('keydown', onKey); };
   }, [navigate, paletteOpen]);
+
+  useEffect(() => {
+    let lastY = window.scrollY;
+    const onScroll = () => { const currentY = window.scrollY; if (currentY < 16) setMobileNavVisible(true); else if (currentY > lastY + 6) setMobileNavVisible(false); else if (currentY < lastY - 6) setMobileNavVisible(true); lastY = currentY; };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const go = (path: string) => { setPaletteOpen(false); setQuery(''); navigate(path); };
   const Nav = ({ mobile = false }: { mobile?: boolean }) => <nav className={cn('flex flex-col', mobile ? 'p-4' : 'px-3 py-5')} aria-label="เมนูหลัก">
@@ -58,7 +66,11 @@ export default function Layout({ children }: { children: ReactNode }) {
       <main className="mx-auto min-h-[calc(100vh-76px)] max-w-[1440px] px-4 py-6 pb-28 sm:px-6 lg:px-8 lg:py-8">{children}<footer className="mt-10 border-t border-slate-200/70 pt-5 text-[11px] text-slate-400"><div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><p className="font-semibold text-slate-500">Powered by กลุ่มงานเทคนิคการแพทย์ โรงพยาบาลกงหรา</p><p className="mt-0.5">Created by Mr.Akaporn Sripanrod</p></div><div className="text-left sm:text-right"><p className="font-mono font-semibold text-slate-500">Version {deployVersion}</p><p className="font-mono text-[10px] text-slate-400">Build {deployRef}</p></div></div></footer></main>
     </div>
     <Link to="/report" className="fixed bottom-20 right-5 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-maroon-700 text-white shadow-xl shadow-maroon-900/25 transition hover:-translate-y-1 hover:bg-maroon-800 focus:outline-none focus:ring-4 focus:ring-maroon-200 md:hidden" aria-label="บันทึกความเสี่ยงใหม่" title="บันทึกความเสี่ยงใหม่"><i className="fa-solid fa-plus text-lg" /></Link>
-    <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 bg-white/95 px-2 pb-[calc(.5rem+env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl md:hidden"><div className="mx-auto flex max-w-md justify-around">{mobileItems.map(item => <Link key={item.path} to={item.path} className={cn('flex min-w-0 flex-col items-center gap-1 rounded-lg px-3 py-1 text-[10px] font-medium transition', location.pathname === item.path ? 'text-maroon-700' : 'text-slate-400 hover:text-slate-700')}><i className={cn(item.icon, 'text-base')} /><span className="max-w-[72px] truncate">{item.label}</span></Link>)}</div></div>
+    <AnimatePresence>
+      {mobileNavVisible && <motion.nav initial={{ y: 90, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 90, opacity: 0 }} transition={{ duration: .18 }} className="fixed bottom-3 left-1/2 z-30 flex w-[calc(100%-24px)] max-w-md -translate-x-1/2 items-center justify-around gap-1 rounded-full border border-slate-200/80 bg-white/95 px-2 py-2 shadow-[0_10px_35px_rgba(36,31,32,.16)] backdrop-blur-xl md:hidden" aria-label="เมนูหลักบนมือถือ">
+        {mobileItems.map(item => { const isActive = location.pathname === item.path; const isPrimary = item.path === '/report'; return <Link key={item.path} to={item.path} aria-current={isActive ? 'page' : undefined} aria-label={item.label} title={item.label} className={cn('relative flex h-12 min-w-12 items-center justify-center rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-maroon-300', isActive ? 'bg-maroon-700 text-white shadow-md shadow-maroon-900/20' : 'text-slate-400 hover:bg-maroon-50 hover:text-maroon-700', isPrimary && !isActive && 'bg-maroon-50 text-maroon-700')}><i className={cn(item.icon, 'text-[17px]')} /><span className="sr-only">{item.label}</span>{isActive && <span className="absolute -bottom-0.5 h-1 w-1 rounded-full bg-white" />}</Link>; })}
+      </motion.nav>}
+    </AnimatePresence>
     <AnimatePresence>{paletteOpen && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-start justify-center bg-slate-950/35 px-4 pt-[12vh] backdrop-blur-sm" onClick={() => setPaletteOpen(false)}><motion.div initial={{ y: -10, scale: .98 }} animate={{ y: 0, scale: 1 }} onClick={event => event.stopPropagation()} className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-900/10"><div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4"><i className="fa-solid fa-magnifying-glass text-slate-400" /><input autoFocus value={query} onChange={event => { setQuery(event.target.value); if (event.target.value.length === 1) fetchIncidents().then(setIncidents).catch(() => undefined); }} placeholder="ค้นหา Incident หรือไปยังเมนู..." className="min-w-0 flex-1 text-sm outline-none" /><kbd className="rounded border border-slate-200 px-2 py-1 text-[10px] text-slate-400">ESC</kbd></div><div className="max-h-[55vh] overflow-y-auto p-2">{filteredItems.map(item => <button key={item.path} onClick={() => go(item.path)} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-maroon-50"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-500"><i className={item.icon} /></span><span><b className="block text-sm text-slate-800">{item.label}</b><small className="text-xs text-slate-400">{item.description}</small></span></button>)}{matchingIncidents.map(item => <button key={item.id} onClick={() => go('/data')} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-maroon-50"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-maroon-50 text-maroon-700"><i className="fa-solid fa-file-waveform" /></span><span><b className="block text-sm text-slate-800">{item.risk_type || 'Incident'}</b><small className="text-xs text-slate-400">{item.id} · {String(item.incident_date).slice(0, 10)}</small></span></button>)}{!filteredItems.length && !matchingIncidents.length && <p className="px-3 py-8 text-center text-sm text-slate-400">ไม่พบผลลัพธ์ ลองค้นหาด้วยชื่อเมนูหรือ Incident ID</p>}</div><div className="border-t border-slate-100 px-4 py-3 text-[11px] text-slate-400"><kbd className="mr-1 rounded border px-1">N</kbd> บันทึกใหม่ · <kbd className="mr-1 rounded border px-1">↑↓</kbd> เลือก · <kbd className="mr-1 rounded border px-1">Enter</kbd> เปิด</div></motion.div></motion.div>}</AnimatePresence>
   </div>;
 }
