@@ -1,5 +1,6 @@
 const APP_URL = `${(process.env.APP_URL || 'https://lab-incident.vercel.app').replace(/\/+$/, '')}/`;
 function bangkokDate() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); }
+function bangkokHourMinute() { return new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date()); }
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
@@ -13,6 +14,7 @@ export default async function handler(req: any, res: any) {
     const incidents = (await incidentResponse.json()).data || [];
     const settings = (await settingsResponse.json()).data || {};
     if (settings.dailyReminder === false || settings.enabled === false) return res.status(200).json({ success: true, skipped: true });
+    if (settings.reminderTime && bangkokHourMinute().slice(0, 2) !== String(settings.reminderTime).slice(0, 2)) return res.status(200).json({ success: true, skipped: true, reason: 'outside_configured_time', configuredTime: settings.reminderTime });
     const today = bangkokDate();
     const todayCount = incidents.filter((item: any) => String(item.incident_date).slice(0, 10) === today).length;
     const unresolved = incidents.filter((item: any) => !item.resolution_status || item.resolution_status === 'Open' || item.resolution_status === 'In Progress');
