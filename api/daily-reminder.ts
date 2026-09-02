@@ -19,6 +19,7 @@ export default async function handler(req: any, res: any) {
     const overdue = unresolved.filter((item: any) => item.target_resolution_date && String(item.target_resolution_date).slice(0, 10) < today).length;
     const repeatOverdue = unresolved.filter((item: any) => { if (!item.target_resolution_date) return false; const days = (new Date(`${today}T00:00:00`).getTime() - new Date(`${String(item.target_resolution_date).slice(0, 10)}T00:00:00`).getTime()) / 86400000; return days >= 3; }).length;
     const verifyQueue = incidents.filter((item: any) => item.resolution_status === 'Resolved').length;
+    if (todayCount === 0 && settings.notifyEmptyDay === false && overdue === 0 && verifyQueue === 0) return res.status(200).json({ success: true, skipped: true, reason: 'empty_day' });
     const message = `📊 <b>สรุปการกำกับความเสี่ยงประจำวัน</b>\nวันนี้บันทึกใหม่ <b>${todayCount}</b> รายการ\nยังไม่ปิด <b>${unresolved.length}</b> รายการ\nเกินกำหนด SLA <b>${overdue}</b> รายการ\nเกิน SLA ต่อเนื่อง ≥3 วัน <b>${repeatOverdue}</b> รายการ\nรอการ Verify <b>${verifyQueue}</b> รายการ\n\n${todayCount === 0 ? 'หากพบเหตุการณ์ความเสี่ยง กรุณาบันทึกข้อมูลผ่านระบบ' : 'กรุณาตรวจสอบความครบถ้วนและดำเนินการรายการค้างตามลำดับ'}`;
     const botToken = (process.env.TELEGRAM_BOT_TOKEN || '').trim().replace(/^bot/i, '');
     const chatId = (process.env.TELEGRAM_CHAT_ID || '').trim();

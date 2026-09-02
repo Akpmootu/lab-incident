@@ -7,7 +7,7 @@ const SHEET_ID = process.env.GOOGLE_SHEET_ID;
 const INCIDENT_RANGE = 'Incidents!A:Y';
 const HISTORY_RANGE = "'Edit History'!A:E";
 const SETTINGS_RANGE = 'Settings!A:B';
-const DEFAULT_SETTINGS = { enabled: true, notifyNearMiss: true, notifyMiss: true, notifyNoHarm: false, dailyReminder: true };
+const DEFAULT_SETTINGS = { enabled: true, notifyNearMiss: true, notifyMiss: true, notifyNoHarm: false, dailyReminder: true, notifyEmptyDay: true, reminderTime: '08:00' };
 
 type Row = Record<string, any>;
 
@@ -117,7 +117,7 @@ async function ensureSettingsSheet() {
 async function getSettings() {
   await ensureSettingsSheet();
   const result = await getValues(SETTINGS_RANGE);
-  return { ...DEFAULT_SETTINGS, ...Object.fromEntries((result.values || []).slice(1).filter((row: any[]) => row[0]).map((row: any[]) => [row[0], row[1] === true || row[1] === 'true'])) };
+  return { ...DEFAULT_SETTINGS, ...Object.fromEntries((result.values || []).slice(1).filter((row: any[]) => row[0] && row[0] in DEFAULT_SETTINGS).map((row: any[]) => [row[0], typeof DEFAULT_SETTINGS[row[0] as keyof typeof DEFAULT_SETTINGS] === 'boolean' ? row[1] === true || row[1] === 'true' : String(row[1] || DEFAULT_SETTINGS[row[0] as keyof typeof DEFAULT_SETTINGS])])) };
 }
 
 async function saveSettings(settings: Record<string, boolean>) {

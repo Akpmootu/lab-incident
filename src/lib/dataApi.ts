@@ -48,7 +48,7 @@ export async function fetchAuditLog(): Promise<AuditEvent[]> {
   return result.data || [];
 }
 
-export interface NotificationSettings { enabled: boolean; notifyNearMiss: boolean; notifyMiss: boolean; notifyNoHarm: boolean; dailyReminder: boolean }
+export interface NotificationSettings { enabled: boolean; notifyNearMiss: boolean; notifyMiss: boolean; notifyNoHarm: boolean; dailyReminder: boolean; notifyEmptyDay: boolean; reminderTime: string }
 export async function fetchNotificationSettings(): Promise<NotificationSettings> {
   const result = await request<{ data: NotificationSettings }>({}, '?view=settings');
   return result.data;
