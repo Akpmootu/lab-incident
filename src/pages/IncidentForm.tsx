@@ -379,7 +379,8 @@ export default function IncidentForm() {
               {s.num < step ? <i className="fa-solid fa-check"></i> : s.num}
             </div>
             <span className={cn(
-              "absolute top-12 text-xs font-medium whitespace-nowrap transition-colors duration-300",
+              "absolute top-12 text-center text-xs font-medium whitespace-nowrap transition-colors duration-300",
+              s.num === step ? "block" : "hidden sm:block",
               step === s.num ? "text-maroon-700 font-bold" : step > s.num ? "text-slate-600" : "text-slate-400"
             )}>
               {s.label}

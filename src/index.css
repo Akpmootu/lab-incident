@@ -103,3 +103,14 @@
 .skeleton { background: linear-gradient(90deg,#eef1f3 25%,#f8fafb 37%,#eef1f3 63%); background-size: 400% 100%; animation: skeleton-shimmer 1.4s ease infinite; border-radius: 10px; }
 @keyframes skeleton-shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
 @media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+
+/* Mobile app shell: keep content inside the viewport and leave room for bottom navigation. */
+html, body, #root { max-width: 100%; overflow-x: hidden; }
+@media (max-width: 640px) {
+  .bento-dashboard > *:hover { transform: none; box-shadow: inherit; }
+  .primary-button { min-height: 44px; }
+  .icon-button { min-height: 44px; min-width: 44px; }
+  main { padding-left: 16px !important; padding-right: 16px !important; }
+  table { min-width: 720px; }
+  [role="dialog"] > div { max-height: calc(100dvh - 32px); }
+}
