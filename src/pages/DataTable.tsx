@@ -39,6 +39,12 @@ export default function DataTable() {
   const [filterPerson, setFilterPerson] = useState<string>('all');
   const filterStatus = searchParams.get('status') || 'all';
   const filterDate = searchParams.get('date') || 'all';
+  const [filterQuarter, setFilterQuarter] = useState<string>('all');
+  const [filterStatusLocal, setFilterStatusLocal] = useState<string>('all');
+  const [filterDepartment, setFilterDepartment] = useState<string>('all');
+  const [dateFrom, setDateFrom] = useState<string>('');
+  const [dateTo, setDateTo] = useState<string>('');
+  const [filtersOpen, setFiltersOpen] = useState(true);
 
   // Edit State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -65,6 +71,10 @@ export default function DataTable() {
     return Array.from(uniqueYears).sort((a, b) => Number(b) - Number(a));
   }, [incidents]);
 
+  const departments = useMemo(() => Array.from(new Set(incidents.map(inc => String(inc.causing_department || '').trim()).filter(Boolean))).sort(), [incidents]);
+  const statuses = ['Open', 'In Progress', 'Resolved', 'Verified', 'Reopened', 'Cancelled'];
+  const getFiscalQuarter = (date: string) => { const month = dayjs(date).month() + 1; return month >= 10 ? '1' : month <= 3 ? '2' : month <= 6 ? '3' : '4'; };
+
   const persons = useMemo(() => {
     const uniquePersons = new Set(incidents.map(inc => inc.responsible_person).filter(Boolean));
     return Array.from(uniquePersons).sort();
@@ -83,12 +93,16 @@ export default function DataTable() {
       const matchImpact = filterImpact === 'all' || inc.impact_level === filterImpact;
       const matchPerson = filterPerson === 'all' || inc.responsible_person === filterPerson;
       const currentStatus = inc.resolution_status || 'Open';
-      const matchStatus = filterStatus === 'all' || (filterStatus === 'open' ? (currentStatus === 'Open' || currentStatus === 'In Progress') : currentStatus === filterStatus);
+      const matchStatus = filterStatusLocal !== 'all' ? currentStatus === filterStatusLocal : (filterStatus === 'all' || (filterStatus === 'open' ? (currentStatus === 'Open' || currentStatus === 'In Progress') : currentStatus === filterStatus));
       const matchDate = filterDate === 'all' || (filterDate === 'today' && inc.incident_date === new Date().toISOString().slice(0, 10));
+      const matchQuarter = filterQuarter === 'all' || getFiscalQuarter(inc.incident_date) === filterQuarter;
+      const matchDepartment = filterDepartment === 'all' || String(inc.causing_department || '').trim() === filterDepartment;
+      const matchFrom = !dateFrom || String(inc.incident_date).slice(0, 10) >= dateFrom;
+      const matchTo = !dateTo || String(inc.incident_date).slice(0, 10) <= dateTo;
 
-      return matchSearch && matchYear && matchMonth && matchType && matchImpact && matchPerson && matchStatus && matchDate;
+      return matchSearch && matchYear && matchMonth && matchType && matchImpact && matchPerson && matchStatus && matchDate && matchQuarter && matchDepartment && matchFrom && matchTo;
     });
-  }, [incidents, searchTerm, filterYear, filterMonth, filterType, filterImpact, filterPerson, filterStatus, filterDate]);
+  }, [incidents, searchTerm, filterYear, filterMonth, filterType, filterImpact, filterPerson, filterStatus, filterDate, filterQuarter, filterStatusLocal, filterDepartment, dateFrom, dateTo]);
 
   const handleViewDetails = (incident: Incident) => {
     const detailsHtml = `
@@ -392,84 +406,24 @@ export default function DataTable() {
         </div>
 
         <div className="p-6">
-          {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
-            <div className="relative">
-              <i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-              <input
-                type="text"
-                placeholder="ค้นหา..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-maroon-500 focus:ring-1 focus:ring-maroon-500 transition-all text-sm"
-              />
-            </div>
-            
-            <select
-              value={filterYear}
-              onChange={(e) => setFilterYear(e.target.value)}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-maroon-500 focus:ring-1 focus:ring-maroon-500 transition-all text-sm appearance-none font-medium"
-            >
-              <option value="all">ทุกปี</option>
-              {years.map(year => (
-                <option key={year} value={year}>ปี พ.ศ. {Number(year) + 543}</option>
-              ))}
-            </select>
-
-            <select
-              value={filterMonth}
-              onChange={(e) => setFilterMonth(e.target.value)}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-maroon-500 focus:ring-1 focus:ring-maroon-500 transition-all text-sm appearance-none font-medium"
-            >
-              <option value="all">ทุกเดือน</option>
-              <option value="01">มกราคม</option>
-              <option value="02">กุมภาพันธ์</option>
-              <option value="03">มีนาคม</option>
-              <option value="04">เมษายน</option>
-              <option value="05">พฤษภาคม</option>
-              <option value="06">มิถุนายน</option>
-              <option value="07">กรกฎาคม</option>
-              <option value="08">สิงหาคม</option>
-              <option value="09">กันยายน</option>
-              <option value="10">ตุลาคม</option>
-              <option value="11">พฤศจิกายน</option>
-              <option value="12">ธันวาคม</option>
-            </select>
-
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-maroon-500 focus:ring-1 focus:ring-maroon-500 transition-all text-sm appearance-none"
-            >
-              <option value="all">ทุกประเภท</option>
-              <option value="Clinic">Clinic</option>
-              <option value="Non-clinic">Non-clinic</option>
-            </select>
-
-            <select
-              value={filterImpact}
-              onChange={(e) => setFilterImpact(e.target.value)}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-maroon-500 focus:ring-1 focus:ring-maroon-500 transition-all text-sm appearance-none"
-            >
-              <option value="all">ทุกระดับความรุนแรง</option>
-              <optgroup label="Clinic">
-                {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'].map(l => <option key={l} value={l}>ระดับ {l}</option>)}
-              </optgroup>
-              <optgroup label="Non-clinic">
-                {['0', '1', '2', '3', '4'].map(l => <option key={l} value={l}>ระดับ {l}</option>)}
-              </optgroup>
-            </select>
-
-            <select
-              value={filterPerson}
-              onChange={(e) => setFilterPerson(e.target.value)}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-maroon-500 focus:ring-1 focus:ring-maroon-500 transition-all text-sm appearance-none"
-            >
-              <option value="all">ทุกคน (ผู้รับผิดชอบ)</option>
-              {persons.map(person => (
-                <option key={person} value={person as string}>{person}</option>
-              ))}
-            </select>
+          <div className="mb-6 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-maroon-700">ตัวกรองข้อมูล</p><p className="mt-1 text-xs text-slate-500">เลือกช่วงเวลา ไตรมาส หรือเงื่อนไขเพิ่มเติมก่อนดูและ Export</p></div><button onClick={() => setFiltersOpen(value => !value)} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:border-maroon-200 hover:text-maroon-700" aria-expanded={filtersOpen}><i className="fa-solid fa-sliders" />{filtersOpen ? 'ซ่อนตัวกรอง' : 'แสดงตัวกรอง'}<i className={cn('fa-solid fa-chevron-down text-[10px] transition-transform', filtersOpen && 'rotate-180')} /></button></div>
+            {filtersOpen && <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="relative"><i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input type="text" placeholder="ค้นหารายละเอียด / ผู้รับผิดชอบ / รายการ" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none focus:border-maroon-500 focus:ring-1 focus:ring-maroon-500" /></div>
+              <label className="text-xs font-semibold text-slate-500">ตั้งแต่วันที่<input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm" /></label>
+              <label className="text-xs font-semibold text-slate-500">ถึงวันที่<input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm" /></label>
+              <label className="text-xs font-semibold text-slate-500">ปีงบประมาณ<select value={filterYear} onChange={e => setFilterYear(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกปี</option>{years.map(year => <option key={year} value={year}>พ.ศ. {Number(year) + 543}</option>)}</select></label>
+              <label className="text-xs font-semibold text-slate-500">ไตรมาสปีงบประมาณ<select value={filterQuarter} onChange={e => setFilterQuarter(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกไตรมาส</option><option value="1">ไตรมาส 1 (ต.ค. - ธ.ค.)</option><option value="2">ไตรมาส 2 (ม.ค. - มี.ค.)</option><option value="3">ไตรมาส 3 (เม.ย. - มิ.ย.)</option><option value="4">ไตรมาส 4 (ก.ค. - ก.ย.)</option></select></label>
+              <label className="text-xs font-semibold text-slate-500">เดือน<select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกเดือน</option>{['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'].map((m, i) => <option key={i} value={String(i + 1).padStart(2, '0')}>{m}</option>)}</select></label>
+              <label className="text-xs font-semibold text-slate-500">ประเภท<select value={filterType} onChange={e => setFilterType(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกประเภท</option><option value="Clinic">Clinic</option><option value="Non-clinic">Non-clinic</option></select></label>
+              <label className="text-xs font-semibold text-slate-500">ระดับผลกระทบ<select value={filterImpact} onChange={e => setFilterImpact(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกระดับ</option>{['A','B','C','D','E','F','G','H','I','0','1','2','3','4'].map(v => <option key={v} value={v}>ระดับ {v}</option>)}</select></label>
+              <label className="text-xs font-semibold text-slate-500">สถานะ<select value={filterStatusLocal} onChange={e => setFilterStatusLocal(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกสถานะ</option>{statuses.map(v => <option key={v} value={v}>{v}</option>)}</select></label>
+              <label className="text-xs font-semibold text-slate-500">หน่วยงานที่เกิดเหตุ<select value={filterDepartment} onChange={e => setFilterDepartment(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกหน่วยงาน</option>{departments.map(v => <option key={v} value={v}>{v}</option>)}</select></label>
+              <label className="text-xs font-semibold text-slate-500">ผู้รับผิดชอบ<select value={filterPerson} onChange={e => setFilterPerson(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกคน</option>{persons.map(person => <option key={person} value={String(person)}>{person}</option>)}</select></label>
+              <label className="text-xs font-semibold text-slate-500">กรองจาก URL<select value={filterStatus === 'open' ? 'open' : filterDate === 'today' ? 'today' : 'all'} disabled className="mt-1 w-full rounded-xl border-slate-200 bg-slate-100 text-sm"><option value="all">ตัวกรองปกติ</option><option value="open">รายการยังไม่ปิด</option><option value="today">รายการวันนี้</option></select></label>
+              <div className="flex items-end"><button onClick={() => { setSearchTerm(''); setFilterYear('all'); setFilterMonth('all'); setFilterType('all'); setFilterImpact('all'); setFilterPerson('all'); setFilterQuarter('all'); setFilterStatusLocal('all'); setFilterDepartment('all'); setDateFrom(''); setDateTo(''); }} className="w-full rounded-xl border border-maroon-200 bg-white px-3 py-2.5 text-sm font-bold text-maroon-700 hover:bg-maroon-50">ล้างตัวกรองทั้งหมด</button></div>
+            </div>}
+            <p className="mt-3 text-xs text-slate-500">กำลังแสดง <b className="text-slate-800">{filteredData.length}</b> รายการ · Export จะใช้ข้อมูลตามตัวกรองนี้</p>
           </div>
 
           {/* Table */}
