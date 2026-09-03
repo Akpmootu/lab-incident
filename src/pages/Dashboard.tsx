@@ -52,6 +52,11 @@ export default function Dashboard() {
   const departments = Array.from(new Set(incidents.map(i => String(i.causing_department || "").trim()).filter(Boolean))).sort();
   const statuses = ["Open", "In Progress", "Resolved", "Verified", "Reopened", "Cancelled"];
   const getFiscalQuarter = (dateString: string) => { const month = new Date(dateString).getMonth() + 1; return month >= 10 ? "1" : month <= 3 ? "2" : month <= 6 ? "3" : "4"; };
+  const getIncidentMonth = (incidentDate: unknown) => {
+    const value = String(incidentDate || "").trim();
+    const match = value.match(/^\d{4}-(\d{2})-/);
+    return match?.[1] || "";
+  };
 
   // --- Data Processing ---
   // Filter by year/month/quarter and additional conditions
@@ -163,12 +168,10 @@ export default function Dashboard() {
         columns.forEach((col) => {
           let count = 0;
           if (viewMode === "monthly") {
-            count = itemIncidents.filter((inc) =>
-              inc.incident_date.endsWith(`-${col.key}`),
-            ).length;
+            count = itemIncidents.filter((inc) => getIncidentMonth(inc.incident_date) === col.key).length;
           } else {
             count = itemIncidents.filter(
-              (inc) => inc.incident_date.split("-")[1] === col.key,
+              (inc) => getIncidentMonth(inc.incident_date) === col.key,
             ).length;
           }
           rowData.push(count);
@@ -257,34 +260,38 @@ export default function Dashboard() {
     const data = columns.map((col) => {
       let count = 0;
       if (viewMode === "monthly") {
-        count = labIncidents.filter((inc) =>
-          inc.incident_date.endsWith(`-${col.key}`),
-        ).length;
+        count = labIncidents.filter((inc) => getIncidentMonth(inc.incident_date) === col.key).length;
       } else {
         count = labIncidents.filter(
-          (inc) => inc.incident_date.split("-")[1] === col.key,
+          (inc) => getIncidentMonth(inc.incident_date) === col.key,
         ).length;
       }
       return { name: col.label, value: count };
     });
 
     return (
-      <div id={`trend-chart-${index}`} className="h-20 w-40 mx-auto bg-white">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
-            <Line
-              type="monotone"
-              dataKey="value"
-              stroke="#800000"
-              strokeWidth={2}
-              dot={{ r: 2, fill: "#800000" }}
-              isAnimationActive={false}
-            />
-            <XAxis dataKey="name" hide />
-            <YAxis hide domain={[0, "dataMax + 1"]} />
-            <Tooltip contentStyle={{ fontSize: "10px", padding: "2px 4px" }} />
-          </LineChart>
-        </ResponsiveContainer>
+      <div id={`trend-chart-${index}`} className="h-20 w-40 mx-auto bg-white" title="กราฟนี้แสดงเฉพาะเหตุการณ์ที่เกิดในหน่วยงาน LAB">
+        {labIncidents.length === 0 ? (
+          <div className="h-full flex items-center justify-center px-2 text-center text-[10px] leading-tight text-slate-400">
+            ไม่มีข้อมูล LAB ในช่วงที่เลือก
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data}>
+              <Line
+                type="monotone"
+                dataKey="value"
+                stroke="#800000"
+                strokeWidth={2}
+                dot={{ r: 2, fill: "#800000" }}
+                isAnimationActive={false}
+              />
+              <XAxis dataKey="name" hide />
+              <YAxis hide domain={[0, "dataMax + 1"]} />
+              <Tooltip contentStyle={{ fontSize: "10px", padding: "2px 4px" }} />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
       </div>
     );
   };
@@ -456,13 +463,11 @@ export default function Dashboard() {
                       {columns.map((col) => {
                         let count = 0;
                         if (viewMode === "monthly") {
-                          count = itemIncidents.filter((inc) =>
-                            inc.incident_date.endsWith(`-${col.key}`),
-                          ).length;
+                          count = itemIncidents.filter((inc) => getIncidentMonth(inc.incident_date) === col.key).length;
                         } else {
                           count = itemIncidents.filter(
                             (inc) =>
-                              inc.incident_date.split("-")[1] === col.key,
+                              getIncidentMonth(inc.incident_date) === col.key,
                           ).length;
                         }
                         rowTotal += count;
