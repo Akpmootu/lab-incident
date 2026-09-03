@@ -60,7 +60,7 @@ export default function Dashboard() {
 
   // --- Data Processing ---
   // Filter by year/month/quarter and additional conditions
-  const filteredData = incidents.filter((inc) => {
+  const filteredData = incidents.filter((inc) => String(inc.causing_department || "").trim().toUpperCase() === "LAB").filter((inc) => {
     const date = new Date(inc.incident_date);
     const year = date.getFullYear();
     const month = date.getMonth() + 1;
@@ -137,6 +137,10 @@ export default function Dashboard() {
       { key: "09", label: "ก.ย." },
     ];
   }
+  const maxHeatValue = Math.max(1, ...uniqueRiskItems.flatMap(item => {
+    const itemIncidents = riskItemsMap.get(item) || [];
+    return columns.map(col => itemIncidents.filter(inc => getIncidentMonth(inc.incident_date) === col.key).length);
+  }));
 
   const handleExportExcel = async () => {
     setIsExporting(true);
@@ -315,7 +319,7 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-            <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-maroon-700">ตัวกรองข้อมูลก่อน Export</p><p className="mt-1 text-xs text-slate-500">ตัวกรองทั้งหมดอยู่ในแผงเดียว · กราฟแนวโน้มใช้เฉพาะ LAB</p></div><button onClick={() => setFiltersOpen(value => !value)} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:border-maroon-200 hover:text-maroon-700" aria-expanded={filtersOpen}><i className="fa-solid fa-sliders" />{filtersOpen ? "ซ่อนตัวกรอง" : "แสดงตัวกรอง"}<i className={`fa-solid fa-chevron-down text-[10px] transition-transform ${filtersOpen ? "rotate-180" : ""}`} /></button></div>
+            <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-maroon-700">ตัวกรองข้อมูลก่อน Export</p><p className="mt-1 text-xs text-slate-500">Dashboard นี้แสดงและ Export เฉพาะรายการจากหน่วยงาน LAB</p></div><button onClick={() => setFiltersOpen(value => !value)} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:border-maroon-200 hover:text-maroon-700" aria-expanded={filtersOpen}><i className="fa-solid fa-sliders" />{filtersOpen ? "ซ่อนตัวกรอง" : "แสดงตัวกรอง"}<i className={`fa-solid fa-chevron-down text-[10px] transition-transform ${filtersOpen ? "rotate-180" : ""}`} /></button></div>
           {filtersOpen && <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <label className="text-xs font-semibold text-slate-500">รูปแบบรายงาน<select value={viewMode} onChange={(e) => setViewMode(e.target.value as "monthly" | "yearly")} className="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm"><option value="monthly">รายเดือน</option><option value="yearly">รายปี (ปีงบประมาณ)</option></select></label>
             <label className="text-xs font-semibold text-slate-500">ปีงบประมาณ<select value={filterYear} onChange={e => setFilterYear(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm">{[2024, 2025, 2026, 2027].map(year => <option key={year} value={year}>พ.ศ. {year + 543}</option>)}</select></label>
@@ -325,7 +329,7 @@ export default function Dashboard() {
             <label className="text-xs font-semibold text-slate-500">ถึงวันที่<input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm" /></label>
             <label className="text-xs font-semibold text-slate-500">ประเภท<select value={filterType} onChange={e => setFilterType(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm"><option value="all">ทุกประเภท</option><option value="Clinic">Clinic</option><option value="Non-clinic">Non-clinic</option></select></label>
             <label className="text-xs font-semibold text-slate-500">กลุ่มเหตุการณ์<select value={filterGroup} onChange={e => setFilterGroup(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm"><option value="all">ทุกกลุ่ม</option>{Array.from(new Set(incidents.map(i => i.group_type).filter(Boolean))).sort().map(v => <option key={v} value={v}>{v}</option>)}</select></label>
-            <label className="text-xs font-semibold text-slate-500">หน่วยงานที่เกิดเหตุ<select value={filterDepartment} onChange={e => setFilterDepartment(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm"><option value="all">ทุกหน่วยงาน</option>{departments.map(v => <option key={v} value={v}>{v}</option>)}</select></label>
+            <label className="text-xs font-semibold text-slate-500">หน่วยงานที่เกิดเหตุ<select value="LAB" disabled className="mt-1 w-full rounded-xl border-slate-200 bg-maroon-50 text-sm font-bold text-maroon-800"><option value="LAB">LAB เท่านั้น</option></select></label>
             <label className="text-xs font-semibold text-slate-500">สถานะ<select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm"><option value="all">ทุกสถานะ</option>{statuses.map(v => <option key={v} value={v}>{v}</option>)}</select></label>
             <div className="flex items-end"><button onClick={() => { setFilterQuarter("all"); setDateFrom(""); setDateTo(""); setFilterType("all"); setFilterGroup("all"); setFilterDepartment("all"); setFilterStatus("all"); }} className="w-full rounded-xl border border-maroon-200 bg-white px-3 py-2.5 text-sm font-bold text-maroon-700 hover:bg-maroon-50">ล้างตัวกรองเพิ่มเติม</button></div>
           </div>}
@@ -386,10 +390,12 @@ export default function Dashboard() {
         ref={tableRef}
       >
         <div className="p-4 bg-slate-50 border-b border-slate-200 text-center font-bold text-slate-800">
-          สรุปการรายงานอุบัติการณ์{" "}
-          {viewMode === "monthly"
-            ? `ประจำเดือน ${filterMonth}/${Number(filterYear) + 543}`
-            : `ปีงบประมาณ ${Number(filterYear) + 543}`}
+          <span>สรุปการรายงานอุบัติการณ์ </span>
+          <span className="inline-flex items-center rounded-full bg-maroon-700 px-3 py-1 text-sm font-extrabold tracking-wide text-white shadow-sm ring-4 ring-maroon-100">
+            {viewMode === "monthly"
+              ? `ประจำเดือน ${filterMonth}/${Number(filterYear) + 543}`
+              : `ปีงบประมาณ ${Number(filterYear) + 543}`}
+          </span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left border-collapse">
@@ -474,7 +480,9 @@ export default function Dashboard() {
                         return (
                           <td
                             key={col.key}
-                            className="border border-slate-200 px-1 py-2 text-center text-slate-600"
+                            className="border border-slate-200 px-1 py-2 text-center text-slate-600 transition-colors"
+                            style={count > 0 ? { backgroundColor: `rgba(128, 0, 0, ${0.10 + (count / maxHeatValue) * 0.72})`, color: count / maxHeatValue > 0.55 ? '#fff' : '#800000', fontWeight: 700 } : undefined}
+                            title={count > 0 ? `${col.label}: ${count} รายการจาก LAB` : `${col.label}: ไม่มีรายการจาก LAB`}
                           >
                             {count > 0 ? (
                               count

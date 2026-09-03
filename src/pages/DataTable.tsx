@@ -45,6 +45,7 @@ export default function DataTable() {
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
   const [filtersOpen, setFiltersOpen] = useState(true);
+  const [filtersHydrated, setFiltersHydrated] = useState(false);
 
   // Edit State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -55,6 +56,35 @@ export default function DataTable() {
   useEffect(() => {
     loadIncidents();
   }, []);
+
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem('lab-incident:data-table-filters');
+      if (saved) {
+        const value = JSON.parse(saved);
+        setSearchTerm(value.searchTerm || '');
+        setFilterYear(value.filterYear || 'all');
+        setFilterMonth(value.filterMonth || 'all');
+        setFilterType(value.filterType || 'all');
+        setFilterImpact(value.filterImpact || 'all');
+        setFilterPerson(value.filterPerson || 'all');
+        setFilterQuarter(value.filterQuarter || 'all');
+        setFilterStatusLocal(value.filterStatusLocal || 'all');
+        setFilterDepartment(value.filterDepartment || 'all');
+        setDateFrom(value.dateFrom || '');
+        setDateTo(value.dateTo || '');
+      }
+    } catch (error) {
+      console.warn('Unable to restore table filters', error);
+    } finally {
+      setFiltersHydrated(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!filtersHydrated) return;
+    sessionStorage.setItem('lab-incident:data-table-filters', JSON.stringify({ searchTerm, filterYear, filterMonth, filterType, filterImpact, filterPerson, filterQuarter, filterStatusLocal, filterDepartment, dateFrom, dateTo }));
+  }, [filtersHydrated, searchTerm, filterYear, filterMonth, filterType, filterImpact, filterPerson, filterQuarter, filterStatusLocal, filterDepartment, dateFrom, dateTo]);
 
   const loadIncidents = async () => {
     try {
@@ -74,6 +104,15 @@ export default function DataTable() {
   const departments = useMemo(() => Array.from(new Set(incidents.map(inc => String(inc.causing_department || '').trim()).filter(Boolean))).sort(), [incidents]);
   const statuses = ['Open', 'In Progress', 'Resolved', 'Verified', 'Reopened', 'Cancelled'];
   const getFiscalQuarter = (date: string) => { const month = dayjs(date).month() + 1; return month >= 10 ? '1' : month <= 3 ? '2' : month <= 6 ? '3' : '4'; };
+  const getDepartmentStyle = (department: string | null) => {
+    const value = String(department || '').trim().toUpperCase();
+    if (value === 'LAB') return 'bg-maroon-100 text-maroon-800 ring-maroon-200';
+    if (value === 'ER') return 'bg-orange-100 text-orange-800 ring-orange-200';
+    if (value === 'IPD') return 'bg-blue-100 text-blue-800 ring-blue-200';
+    if (value === 'IT/งานประกัน') return 'bg-violet-100 text-violet-800 ring-violet-200';
+    if (value) return 'bg-slate-100 text-slate-700 ring-slate-200';
+    return 'bg-amber-50 text-amber-700 ring-amber-200';
+  };
 
   const persons = useMemo(() => {
     const uniquePersons = new Set(incidents.map(inc => inc.responsible_person).filter(Boolean));
@@ -434,6 +473,7 @@ export default function DataTable() {
                   <th className="px-4 py-3">วันที่</th>
                   <th className="px-4 py-3">ประเภท</th>
                   <th className="px-4 py-3">รายการความเสี่ยง</th>
+                  <th className="px-4 py-3">หน่วยงานที่เกิดเหตุ</th>
                   <th className="px-4 py-3 text-center">ระดับ</th>
                   <th className="px-4 py-3">สถานะ</th>
                   <th className="px-4 py-3">ผู้รับผิดชอบ</th>
@@ -443,14 +483,14 @@ export default function DataTable() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
+                    <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
                       <i className="fa-solid fa-circle-notch fa-spin text-2xl mb-2 text-maroon-600"></i>
                       <p>กำลังโหลดข้อมูล...</p>
                     </td>
                   </tr>
                 ) : filteredData.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
+                    <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
                       <i className="fa-solid fa-inbox text-3xl mb-2 text-slate-300"></i>
                       <p>ไม่พบข้อมูล</p>
                     </td>
@@ -460,7 +500,7 @@ export default function DataTable() {
                     <tr key={incident.id} className="bg-white border-b border-slate-100 hover:bg-slate-50 transition-colors">
                       {editingId === incident.id ? (
                         // Edit Mode Row
-                        <td colSpan={6} className="p-4 bg-maroon-50/50">
+                        <td colSpan={7} className="p-4 bg-maroon-50/50">
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                             <div>
                               <label className="block text-xs font-medium text-slate-500 mb-1">วันที่</label>
@@ -647,6 +687,12 @@ export default function DataTable() {
                           </td>
                           <td className="px-4 py-3 max-w-[200px] truncate" title={incident.risk_items?.join(', ') || incident.other_risk_item || '-'}>
                             {incident.risk_items?.join(', ') || incident.other_risk_item || '-'}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={cn('inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold ring-1 ring-inset', getDepartmentStyle(incident.causing_department))}>
+                              <i className="fa-solid fa-building mr-1.5 text-[10px]" />
+                              {incident.causing_department || 'ไม่ระบุ'}
+                            </span>
                           </td>
                           <td className="px-4 py-3 text-center">
                             {(() => {
