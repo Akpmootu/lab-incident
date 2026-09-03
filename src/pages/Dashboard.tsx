@@ -25,6 +25,14 @@ export default function Dashboard() {
   const [filterMonth, setFilterMonth] = useState(
     (new Date().getMonth() + 1).toString().padStart(2, "0"),
   );
+  const [filterQuarter, setFilterQuarter] = useState("all");
+  const [filterType, setFilterType] = useState("all");
+  const [filterGroup, setFilterGroup] = useState("all");
+  const [filterDepartment, setFilterDepartment] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(true);
   const tableRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,23 +49,28 @@ export default function Dashboard() {
       Swal.fire("ข้อผิดพลาด", "ไม่สามารถโหลดข้อมูลได้", "error");
     } finally { setLoading(false); }
   };
+  const departments = Array.from(new Set(incidents.map(i => String(i.causing_department || "").trim()).filter(Boolean))).sort();
+  const statuses = ["Open", "In Progress", "Resolved", "Verified", "Reopened", "Cancelled"];
+  const getFiscalQuarter = (dateString: string) => { const month = new Date(dateString).getMonth() + 1; return month >= 10 ? "1" : month <= 3 ? "2" : month <= 6 ? "3" : "4"; };
+
   // --- Data Processing ---
-  // Filter by year (and month if monthly view)
+  // Filter by year/month/quarter and additional conditions
   const filteredData = incidents.filter((inc) => {
-    if (viewMode === "monthly") {
-      return inc.incident_date.startsWith(`${filterYear}-${filterMonth}`);
-    } else {
-      // Yearly view: Fiscal year (Oct - Sep)
-      // If filterYear is 2024, fiscal year is Oct 2023 - Sep 2024
-      const date = new Date(inc.incident_date);
-      const year = date.getFullYear();
-      const month = date.getMonth() + 1;
-      const targetYear = parseInt(filterYear);
-      return (
-        (year === targetYear - 1 && month >= 10) ||
-        (year === targetYear && month <= 9)
-      );
-    }
+    const date = new Date(inc.incident_date);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const targetYear = parseInt(filterYear);
+    const inPeriod = viewMode === "monthly"
+      ? inc.incident_date.startsWith(`${filterYear}-${filterMonth}`)
+      : ((year === targetYear - 1 && month >= 10) || (year === targetYear && month <= 9));
+    const inQuarter = filterQuarter === "all" || getFiscalQuarter(inc.incident_date) === filterQuarter;
+    const inType = filterType === "all" || inc.risk_type === filterType;
+    const inGroup = filterGroup === "all" || inc.group_type === filterGroup;
+    const inDepartment = filterDepartment === "all" || String(inc.causing_department || "").trim() === filterDepartment;
+    const inStatus = filterStatus === "all" || (inc.resolution_status || "Open") === filterStatus;
+    const inFrom = !dateFrom || inc.incident_date >= dateFrom;
+    const inTo = !dateTo || inc.incident_date <= dateTo;
+    return inPeriod && inQuarter && inType && inGroup && inDepartment && inStatus && inFrom && inTo;
   });
 
   // Summary Cards Data
@@ -215,7 +228,7 @@ export default function Dashboard() {
       });
       saveAs(
         blob,
-        `สรุปอุบัติการณ์_${viewMode === "monthly" ? filterMonth + "_" : ""}${Number(filterYear) + 543}.xlsx`,
+        `สรุปอุบัติการณ์_${viewMode === "monthly" ? filterMonth + "_" : ""}${Number(filterYear) + 543}${filterQuarter !== "all" ? `_Q${filterQuarter}` : ""}.xlsx`,
       );
     } catch (err) {
       console.error("Export error:", err);
@@ -240,14 +253,15 @@ export default function Dashboard() {
   };
 
   const renderTrendChart = (itemIncidents: any[], index: number) => {
+    const labIncidents = itemIncidents.filter((inc) => String(inc.causing_department || "").trim().toUpperCase() === "LAB");
     const data = columns.map((col) => {
       let count = 0;
       if (viewMode === "monthly") {
-        count = itemIncidents.filter((inc) =>
+        count = labIncidents.filter((inc) =>
           inc.incident_date.endsWith(`-${col.key}`),
         ).length;
       } else {
-        count = itemIncidents.filter(
+        count = labIncidents.filter(
           (inc) => inc.incident_date.split("-")[1] === col.key,
         ).length;
       }
@@ -361,6 +375,20 @@ export default function Dashboard() {
             )}
             {isExporting ? "กำลัง Export..." : "Export Excel"}
           </button>
+        </div>
+        <div className="mt-4 border-t border-slate-100 pt-4">
+          <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-maroon-700">ตัวกรองข้อมูลก่อน Export</p><p className="mt-1 text-xs text-slate-500">กราฟแนวโน้มใช้เฉพาะหน่วยงานที่เกิดเหตุเป็น LAB</p></div><button onClick={() => setFiltersOpen(value => !value)} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:border-maroon-200 hover:text-maroon-700" aria-expanded={filtersOpen}><i className="fa-solid fa-sliders" />{filtersOpen ? "ซ่อนตัวกรอง" : "แสดงตัวกรอง"}<i className={`fa-solid fa-chevron-down text-[10px] transition-transform ${filtersOpen ? "rotate-180" : ""}`} /></button></div>
+          {filtersOpen && <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <label className="text-xs font-semibold text-slate-500">ไตรมาสปีงบประมาณ<select value={filterQuarter} onChange={e => setFilterQuarter(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm"><option value="all">ทุกไตรมาส</option><option value="1">ไตรมาส 1 (ต.ค. - ธ.ค.)</option><option value="2">ไตรมาส 2 (ม.ค. - มี.ค.)</option><option value="3">ไตรมาส 3 (เม.ย. - มิ.ย.)</option><option value="4">ไตรมาส 4 (ก.ค. - ก.ย.)</option></select></label>
+            <label className="text-xs font-semibold text-slate-500">ตั้งแต่วันที่<input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm" /></label>
+            <label className="text-xs font-semibold text-slate-500">ถึงวันที่<input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm" /></label>
+            <label className="text-xs font-semibold text-slate-500">ประเภท<select value={filterType} onChange={e => setFilterType(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm"><option value="all">ทุกประเภท</option><option value="Clinic">Clinic</option><option value="Non-clinic">Non-clinic</option></select></label>
+            <label className="text-xs font-semibold text-slate-500">กลุ่มเหตุการณ์<select value={filterGroup} onChange={e => setFilterGroup(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm"><option value="all">ทุกกลุ่ม</option>{Array.from(new Set(incidents.map(i => i.group_type).filter(Boolean))).sort().map(v => <option key={v} value={v}>{v}</option>)}</select></label>
+            <label className="text-xs font-semibold text-slate-500">หน่วยงานที่เกิดเหตุ<select value={filterDepartment} onChange={e => setFilterDepartment(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm"><option value="all">ทุกหน่วยงาน</option>{departments.map(v => <option key={v} value={v}>{v}</option>)}</select></label>
+            <label className="text-xs font-semibold text-slate-500">สถานะ<select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm"><option value="all">ทุกสถานะ</option>{statuses.map(v => <option key={v} value={v}>{v}</option>)}</select></label>
+            <div className="flex items-end"><button onClick={() => { setFilterQuarter("all"); setDateFrom(""); setDateTo(""); setFilterType("all"); setFilterGroup("all"); setFilterDepartment("all"); setFilterStatus("all"); }} className="w-full rounded-xl border border-maroon-200 bg-white px-3 py-2.5 text-sm font-bold text-maroon-700 hover:bg-maroon-50">ล้างตัวกรองเพิ่มเติม</button></div>
+          </div>}
+          <p className="mt-3 text-xs text-slate-500">กำลังแสดง <b className="text-slate-800">{filteredData.length}</b> รายการ · Export จะใช้ข้อมูลตามตัวกรองทั้งหมด</p>
         </div>
       </div>
 
