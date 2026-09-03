@@ -295,90 +295,24 @@ export default function Dashboard() {
 
   return (
     <div className="bento-dashboard space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
-            <i className="fa-solid fa-chart-pie text-maroon-600"></i>
-            สรุปรายงานอุบัติการณ์
-          </h1>
-          <p className="text-slate-500 mt-1">
-            ข้อมูลสถิติและกราฟแสดงแนวโน้มความเสี่ยง
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <select
-            value={viewMode}
-            onChange={(e) =>
-              setViewMode(e.target.value as "monthly" | "yearly")
-            }
-            className="bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-xl focus:ring-maroon-500 focus:border-maroon-500 block p-2.5 outline-none font-medium"
-          >
-            <option value="monthly">รายเดือน</option>
-            <option value="yearly">รายปี (ปีงบประมาณ)</option>
-          </select>
-
-          {viewMode === "monthly" && (
-            <select
-              value={filterMonth}
-              onChange={(e) => setFilterMonth(e.target.value)}
-              className="bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-xl focus:ring-maroon-500 focus:border-maroon-500 block p-2.5 outline-none font-medium"
-            >
-              {[
-                { val: "01", label: "มกราคม" },
-                { val: "02", label: "กุมภาพันธ์" },
-                { val: "03", label: "มีนาคม" },
-                { val: "04", label: "เมษายน" },
-                { val: "05", label: "พฤษภาคม" },
-                { val: "06", label: "มิถุนายน" },
-                { val: "07", label: "กรกฎาคม" },
-                { val: "08", label: "สิงหาคม" },
-                { val: "09", label: "กันยายน" },
-                { val: "10", label: "ตุลาคม" },
-                { val: "11", label: "พฤศจิกายน" },
-                { val: "12", label: "ธันวาคม" },
-              ].map((m) => (
-                <option key={m.val} value={m.val}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
-          )}
-
-          <select
-            value={filterYear}
-            onChange={(e) => setFilterYear(e.target.value)}
-            className="bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-xl focus:ring-maroon-500 focus:border-maroon-500 block p-2.5 outline-none font-medium"
-          >
-            {[2024, 2025, 2026, 2027].map((year) => (
-              <option key={year} value={year}>
-                ปี พ.ศ. {year + 543}
-              </option>
-            ))}
-          </select>
-
-          <button
-            onClick={saveAsImage}
-            className="bg-maroon-600 hover:bg-maroon-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center gap-2 shadow-sm"
-          >
-            <i className="fa-solid fa-image"></i>
-            บันทึกรูปภาพ
-          </button>
-          <button
-            onClick={handleExportExcel}
-            disabled={isExporting}
-            className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center gap-2 shadow-sm"
-          >
-            {isExporting ? (
-              <i className="fa-solid fa-circle-notch fa-spin"></i>
-            ) : (
-              <i className="fa-solid fa-file-excel"></i>
-            )}
-            {isExporting ? "กำลัง Export..." : "Export Excel"}
-          </button>
-        </div>
-        <div className="mt-4 border-t border-slate-100 pt-4">
-          <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-maroon-700">ตัวกรองข้อมูลก่อน Export</p><p className="mt-1 text-xs text-slate-500">กราฟแนวโน้มใช้เฉพาะหน่วยงานที่เกิดเหตุเป็น LAB</p></div><button onClick={() => setFiltersOpen(value => !value)} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:border-maroon-200 hover:text-maroon-700" aria-expanded={filtersOpen}><i className="fa-solid fa-sliders" />{filtersOpen ? "ซ่อนตัวกรอง" : "แสดงตัวกรอง"}<i className={`fa-solid fa-chevron-down text-[10px] transition-transform ${filtersOpen ? "rotate-180" : ""}`} /></button></div>
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3"><i className="fa-solid fa-chart-pie text-maroon-600"></i>สรุปรายงานอุบัติการณ์</h1>
+              <p className="text-slate-500 mt-1">ข้อมูลสถิติและกราฟแสดงแนวโน้มความเสี่ยง</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <button onClick={saveAsImage} className="bg-maroon-600 hover:bg-maroon-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center gap-2 shadow-sm"><i className="fa-solid fa-image"></i>บันทึกรูปภาพ</button>
+              <button onClick={handleExportExcel} disabled={isExporting} className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center gap-2 shadow-sm">{isExporting ? <i className="fa-solid fa-circle-notch fa-spin"></i> : <i className="fa-solid fa-file-excel"></i>}{isExporting ? "กำลัง Export..." : "Export Excel"}</button>
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-maroon-700">ตัวกรองข้อมูลก่อน Export</p><p className="mt-1 text-xs text-slate-500">ตัวกรองทั้งหมดอยู่ในแผงเดียว · กราฟแนวโน้มใช้เฉพาะ LAB</p></div><button onClick={() => setFiltersOpen(value => !value)} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:border-maroon-200 hover:text-maroon-700" aria-expanded={filtersOpen}><i className="fa-solid fa-sliders" />{filtersOpen ? "ซ่อนตัวกรอง" : "แสดงตัวกรอง"}<i className={`fa-solid fa-chevron-down text-[10px] transition-transform ${filtersOpen ? "rotate-180" : ""}`} /></button></div>
           {filtersOpen && <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <label className="text-xs font-semibold text-slate-500">รูปแบบรายงาน<select value={viewMode} onChange={(e) => setViewMode(e.target.value as "monthly" | "yearly")} className="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm"><option value="monthly">รายเดือน</option><option value="yearly">รายปี (ปีงบประมาณ)</option></select></label>
+            <label className="text-xs font-semibold text-slate-500">ปีงบประมาณ<select value={filterYear} onChange={e => setFilterYear(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm">{[2024, 2025, 2026, 2027].map(year => <option key={year} value={year}>พ.ศ. {year + 543}</option>)}</select></label>
+            {viewMode === "monthly" && <label className="text-xs font-semibold text-slate-500">เดือน<select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm">{[{ val: "01", label: "มกราคม" }, { val: "02", label: "กุมภาพันธ์" }, { val: "03", label: "มีนาคม" }, { val: "04", label: "เมษายน" }, { val: "05", label: "พฤษภาคม" }, { val: "06", label: "มิถุนายน" }, { val: "07", label: "กรกฎาคม" }, { val: "08", label: "สิงหาคม" }, { val: "09", label: "กันยายน" }, { val: "10", label: "ตุลาคม" }, { val: "11", label: "พฤศจิกายน" }, { val: "12", label: "ธันวาคม" }].map(m => <option key={m.val} value={m.val}>{m.label}</option>)}</select></label>}
             <label className="text-xs font-semibold text-slate-500">ไตรมาสปีงบประมาณ<select value={filterQuarter} onChange={e => setFilterQuarter(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm"><option value="all">ทุกไตรมาส</option><option value="1">ไตรมาส 1 (ต.ค. - ธ.ค.)</option><option value="2">ไตรมาส 2 (ม.ค. - มี.ค.)</option><option value="3">ไตรมาส 3 (เม.ย. - มิ.ย.)</option><option value="4">ไตรมาส 4 (ก.ค. - ก.ย.)</option></select></label>
             <label className="text-xs font-semibold text-slate-500">ตั้งแต่วันที่<input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm" /></label>
             <label className="text-xs font-semibold text-slate-500">ถึงวันที่<input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm" /></label>
@@ -389,6 +323,7 @@ export default function Dashboard() {
             <div className="flex items-end"><button onClick={() => { setFilterQuarter("all"); setDateFrom(""); setDateTo(""); setFilterType("all"); setFilterGroup("all"); setFilterDepartment("all"); setFilterStatus("all"); }} className="w-full rounded-xl border border-maroon-200 bg-white px-3 py-2.5 text-sm font-bold text-maroon-700 hover:bg-maroon-50">ล้างตัวกรองเพิ่มเติม</button></div>
           </div>}
           <p className="mt-3 text-xs text-slate-500">กำลังแสดง <b className="text-slate-800">{filteredData.length}</b> รายการ · Export จะใช้ข้อมูลตามตัวกรองทั้งหมด</p>
+          </div>
         </div>
       </div>
 
