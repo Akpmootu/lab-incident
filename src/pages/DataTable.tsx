@@ -46,6 +46,8 @@ export default function DataTable() {
   const [dateTo, setDateTo] = useState<string>('');
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [filtersHydrated, setFiltersHydrated] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
 
   // Edit State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -142,6 +144,11 @@ export default function DataTable() {
       return matchSearch && matchYear && matchMonth && matchType && matchImpact && matchPerson && matchStatus && matchDate && matchQuarter && matchDepartment && matchFrom && matchTo;
     });
   }, [incidents, searchTerm, filterYear, filterMonth, filterType, filterImpact, filterPerson, filterStatus, filterDate, filterQuarter, filterStatusLocal, filterDepartment, dateFrom, dateTo]);
+  const pageCount = Math.max(1, Math.ceil(filteredData.length / pageSize));
+  const paginatedData = useMemo(() => filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize), [filteredData, currentPage]);
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterYear, filterMonth, filterType, filterImpact, filterPerson, filterQuarter, filterStatusLocal, filterDepartment, dateFrom, dateTo, filterStatus, filterDate]);
 
   const handleViewDetails = (incident: Incident) => {
     const detailsHtml = `
@@ -496,7 +503,7 @@ export default function DataTable() {
                     </td>
                   </tr>
                 ) : (
-                  filteredData.map((incident) => (
+                  paginatedData.map((incident) => (
                     <tr key={incident.id} className="bg-white border-b border-slate-100 hover:bg-slate-50 transition-colors">
                       {editingId === incident.id ? (
                         // Edit Mode Row
@@ -752,6 +759,14 @@ export default function DataTable() {
               </tbody>
             </table>
           </div>
+          {filteredData.length > pageSize && <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-slate-500">หน้า {currentPage} จาก {pageCount} · แสดง {Math.min((currentPage - 1) * pageSize + 1, filteredData.length)}–{Math.min(currentPage * pageSize, filteredData.length)} จาก {filteredData.length} รายการ</p>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setCurrentPage(page => Math.max(1, page - 1))} disabled={currentPage === 1} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-maroon-200 hover:text-maroon-700 disabled:cursor-not-allowed disabled:opacity-40" aria-label="หน้าก่อนหน้า"><i className="fa-solid fa-chevron-left" /></button>
+              <span className="rounded-xl bg-maroon-50 px-3 py-2 text-sm font-bold text-maroon-800">{currentPage}</span>
+              <button onClick={() => setCurrentPage(page => Math.min(pageCount, page + 1))} disabled={currentPage === pageCount} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-maroon-200 hover:text-maroon-700 disabled:cursor-not-allowed disabled:opacity-40" aria-label="หน้าถัดไป"><i className="fa-solid fa-chevron-right" /></button>
+            </div>
+          </div>}
         </div>
       </div>
     </div>

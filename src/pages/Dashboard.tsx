@@ -57,6 +57,11 @@ export default function Dashboard() {
     const match = value.match(/^\d{4}-(\d{2})-/);
     return match?.[1] || "";
   };
+  const getIncidentDay = (incidentDate: unknown) => {
+    const value = String(incidentDate || "").trim();
+    const match = value.match(/^\d{4}-\d{2}-(\d{2})/);
+    return match?.[1] || "";
+  };
 
   // --- Data Processing ---
   // Filter by year/month/quarter and additional conditions
@@ -139,7 +144,7 @@ export default function Dashboard() {
   }
   const maxHeatValue = Math.max(1, ...uniqueRiskItems.flatMap(item => {
     const itemIncidents = riskItemsMap.get(item) || [];
-    return columns.map(col => itemIncidents.filter(inc => getIncidentMonth(inc.incident_date) === col.key).length);
+    return columns.map(col => itemIncidents.filter(inc => (viewMode === "monthly" ? getIncidentDay(inc.incident_date) : getIncidentMonth(inc.incident_date)) === col.key).length);
   }));
 
   const handleExportExcel = async () => {
@@ -172,7 +177,7 @@ export default function Dashboard() {
         columns.forEach((col) => {
           let count = 0;
           if (viewMode === "monthly") {
-            count = itemIncidents.filter((inc) => getIncidentMonth(inc.incident_date) === col.key).length;
+            count = itemIncidents.filter((inc) => getIncidentDay(inc.incident_date) === col.key).length;
           } else {
             count = itemIncidents.filter(
               (inc) => getIncidentMonth(inc.incident_date) === col.key,
@@ -264,7 +269,7 @@ export default function Dashboard() {
     const data = columns.map((col) => {
       let count = 0;
       if (viewMode === "monthly") {
-        count = labIncidents.filter((inc) => getIncidentMonth(inc.incident_date) === col.key).length;
+        count = labIncidents.filter((inc) => getIncidentDay(inc.incident_date) === col.key).length;
       } else {
         count = labIncidents.filter(
           (inc) => getIncidentMonth(inc.incident_date) === col.key,
@@ -469,7 +474,7 @@ export default function Dashboard() {
                       {columns.map((col) => {
                         let count = 0;
                         if (viewMode === "monthly") {
-                          count = itemIncidents.filter((inc) => getIncidentMonth(inc.incident_date) === col.key).length;
+                          count = itemIncidents.filter((inc) => getIncidentDay(inc.incident_date) === col.key).length;
                         } else {
                           count = itemIncidents.filter(
                             (inc) =>
