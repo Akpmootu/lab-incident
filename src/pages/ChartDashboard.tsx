@@ -9,6 +9,8 @@ import {
 } from 'recharts';
 import { cn } from '../lib/utils';
 import { PageSkeleton } from '../components/Skeleton';
+import ExcelJS from 'exceljs';
+import dayjs from 'dayjs';
 
 const COLORS = ['#800000', '#991b1b', '#b91c1c', '#dc2626', '#ef4444', '#f87171', '#fca5a5'];
 
@@ -39,6 +41,14 @@ export default function ChartDashboard() {
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
+  const [selectedProcess, setSelectedProcess] = useState<string>('all');
+  const [selectedGroup, setSelectedGroup] = useState<string>('all');
+  const [dateFrom, setDateFrom] = useState<string>('');
+  const [dateTo, setDateTo] = useState<string>('');
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Interactive Table State
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
@@ -62,6 +72,11 @@ export default function ChartDashboard() {
 
   // Filter Options
   const years = useMemo(() => Array.from(new Set(data.map(d => getFiscalYear(d.incident_date).toString()))).sort().reverse(), [data]);
+  const departments = useMemo(() => Array.from(new Set(data.map(d => String(d.causing_department || '').trim()).filter(Boolean))).sort(), [data]);
+  const processes = useMemo(() => Array.from(new Set(data.map(d => String(d.process_type || '').trim()).filter(Boolean))).sort(), [data]);
+  const groups = useMemo(() => Array.from(new Set(data.map(d => String(d.group_type || '').trim()).filter(Boolean))).sort(), [data]);
+  const statuses = ['Open', 'In Progress', 'Resolved', 'Verified', 'Reopened', 'Cancelled'];
+
   const categories = useMemo(() => {
     const cats = new Set<string>();
     data.forEach(d => {
@@ -81,14 +96,20 @@ export default function ChartDashboard() {
       if (selectedYear !== 'all' && fy !== selectedYear) return false;
       if (selectedMonth !== 'all' && fm !== selectedMonth) return false;
       if (selectedCategory !== 'all' && cat !== selectedCategory) return false;
+      if (selectedStatus !== 'all' && (item.resolution_status || 'Open') !== selectedStatus) return false;
+      if (selectedDepartment !== 'all' && String(item.causing_department || '').trim() !== selectedDepartment) return false;
+      if (selectedProcess !== 'all' && String(item.process_type || '').trim() !== selectedProcess) return false;
+      if (selectedGroup !== 'all' && String(item.group_type || '').trim() !== selectedGroup) return false;
+      if (dateFrom && String(item.incident_date).slice(0, 10) < dateFrom) return false;
+      if (dateTo && String(item.incident_date).slice(0, 10) > dateTo) return false;
       return true;
     });
-  }, [data, selectedYear, selectedMonth, selectedCategory]);
+  }, [data, selectedYear, selectedMonth, selectedCategory, selectedStatus, selectedDepartment, selectedProcess, selectedGroup, dateFrom, dateTo]);
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedYear, selectedMonth, selectedCategory]);
+  }, [selectedYear, selectedMonth, selectedCategory, selectedStatus, selectedDepartment, selectedProcess, selectedGroup, dateFrom, dateTo]);
 
   // Pagination logic
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -135,11 +156,9 @@ export default function ChartDashboard() {
   // 1. Monthly Trend (Bar Chart)
   const monthlyTrendData = useMemo(() => {
     const trend = MONTHS_TH.map((month, index) => ({ month, count: 0, index }));
-    filteredData.forEach(d => {
+    filteredData.filter(d => String(d.causing_department || '').trim().toUpperCase() === 'LAB').forEach(d => {
       const mIndex = getFiscalMonthIndex(d.incident_date);
-      if (trend[mIndex]) {
-        trend[mIndex].count += 1;
-      }
+      if (trend[mIndex]) trend[mIndex].count += 1;
     });
     return trend;
   }, [filteredData]);
@@ -272,6 +291,26 @@ export default function ChartDashboard() {
       .sort((a, b) => b.value - a.value);
   }, [filteredData]);
 
+  const handleExportExcel = async () => {
+    const { value: password } = await Swal.fire({ title: 'ยืนยันการ Export Dashboard', input: 'password', inputLabel: 'กรุณากรอกรหัสผ่านเพื่อยืนยันการ Export', inputPlaceholder: 'รหัสผ่าน', showCancelButton: true, confirmButtonText: 'Export', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#800000' });
+    if (password !== 'LAB11414@2569') { if (password) Swal.fire({ title: 'รหัสผ่านไม่ถูกต้อง', icon: 'error', confirmButtonColor: '#800000' }); return; }
+    setIsExporting(true);
+    try {
+      const { saveAs } = await import('file-saver');
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Dashboard Export');
+      worksheet.columns = [
+        { header: 'Incident ID', key: 'id', width: 38 }, { header: 'วันที่', key: 'incident_date', width: 15 }, { header: 'ประเภท', key: 'risk_type', width: 16 },
+        { header: 'ขั้นตอน', key: 'process_type', width: 20 }, { header: 'รายการความเสี่ยง', key: 'risk_items', width: 42 }, { header: 'กลุ่มเหตุการณ์', key: 'group_type', width: 18 },
+        { header: 'ระดับผลกระทบ', key: 'impact_level', width: 16 }, { header: 'หน่วยงานที่เกิดเหตุ', key: 'causing_department', width: 24 }, { header: 'ผู้รับผิดชอบ', key: 'responsible_person', width: 24 }, { header: 'สถานะ', key: 'resolution_status', width: 18 }, { header: 'วันที่เกิดเหตุ', key: 'incident_date_iso', width: 16 }
+      ];
+      filteredData.forEach(item => worksheet.addRow({ id: item.id, incident_date: dayjs(item.incident_date).format('DD/MM/YYYY'), risk_type: item.risk_type || '-', process_type: item.process_type || '-', risk_items: Array.isArray(item.risk_items) ? item.risk_items.join(', ') : '-', group_type: item.group_type || '-', impact_level: item.impact_level || '-', causing_department: item.causing_department || '-', responsible_person: item.responsible_person || '-', resolution_status: item.resolution_status || 'Open', incident_date_iso: String(item.incident_date).slice(0, 10) }));
+      worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } }; worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF800000' } }; worksheet.views = [{ state: 'frozen', ySplit: 1 }];
+      const buffer = await workbook.xlsx.writeBuffer(); saveAs(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `Dashboard_Export_${dayjs().format('YYYYMMDD_HHmmss')}.xlsx`);
+      Swal.fire({ title: 'Export สำเร็จ', text: `ส่งออก ${filteredData.length} รายการตามตัวกรองแล้ว`, icon: 'success', confirmButtonColor: '#800000' });
+    } catch (error) { console.error(error); Swal.fire({ title: 'Export ไม่สำเร็จ', text: 'กรุณาลองใหม่อีกครั้ง', icon: 'error', confirmButtonColor: '#800000' }); } finally { setIsExporting(false); }
+  };
+
   // Custom Tooltip for Recharts
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -301,42 +340,24 @@ export default function ChartDashboard() {
             <p className="text-slate-500 text-sm mt-1">สรุปภาพรวมอุบัติการณ์ความเสี่ยง (Lab Incident Management)</p>
           </div>
           
-          {/* Filters */}
-          <div className="flex flex-wrap gap-3 w-full md:w-auto">
-            <div className="flex-1 md:w-40">
-              <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">ปีงบประมาณ</label>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
-                className="w-full text-sm border-slate-200 rounded-xl focus:ring-maroon-500 focus:border-maroon-500 bg-slate-50"
-              >
-                <option value="all">ทุกปีงบประมาณ</option>
-                {years.map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
-            </div>
-            <div className="flex-1 md:w-40">
-              <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">เดือน</label>
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="w-full text-sm border-slate-200 rounded-xl focus:ring-maroon-500 focus:border-maroon-500 bg-slate-50"
-              >
-                <option value="all">ทุกเดือน</option>
-                {MONTHS_TH.map((m, i) => <option key={i} value={i}>{m}</option>)}
-              </select>
-            </div>
-            <div className="flex-1 md:w-48">
-              <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">หมวดหมู่ (Category)</label>
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full text-sm border-slate-200 rounded-xl focus:ring-maroon-500 focus:border-maroon-500 bg-slate-50"
-              >
-                <option value="all">ทุกหมวดหมู่</option>
-                {categories.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div><p className="text-xs font-bold uppercase tracking-[.16em] text-maroon-700">Data controls</p><p className="mt-1 text-sm text-slate-500">เลือกช่วงเวลาและเงื่อนไข แล้ว Export เฉพาะข้อมูลที่ต้องการ</p></div>
+            <div className="flex flex-wrap gap-2"><button onClick={() => setFiltersOpen(value => !value)} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-maroon-200 hover:text-maroon-700" aria-expanded={filtersOpen}><i className="fa-solid fa-sliders" />{filtersOpen ? 'ซ่อนตัวกรอง' : 'แสดงตัวกรอง'}<i className={cn('fa-solid fa-chevron-down text-[10px] transition-transform', filtersOpen && 'rotate-180')} /></button><button onClick={handleExportExcel} disabled={isExporting || filteredData.length === 0} className="inline-flex items-center gap-2 rounded-xl bg-maroon-700 px-3 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-maroon-800 disabled:cursor-not-allowed disabled:opacity-50"><i className={isExporting ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-file-excel'} />{isExporting ? 'กำลัง Export...' : 'Export Excel'}</button></div>
           </div>
+          {filtersOpen && <div className="mt-5 rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <label className="text-xs font-semibold text-slate-500">ตั้งแต่วันที่<input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm" /></label>
+              <label className="text-xs font-semibold text-slate-500">ถึงวันที่<input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm" /></label>
+              <label className="text-xs font-semibold text-slate-500">ปีงบประมาณ<select value={selectedYear} onChange={e => setSelectedYear(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกปีงบประมาณ</option>{years.map(y => <option key={y} value={y}>{y}</option>)}</select></label>
+              <label className="text-xs font-semibold text-slate-500">เดือน<select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกเดือน</option>{MONTHS_TH.map((m, i) => <option key={i} value={i}>{m}</option>)}</select></label>
+              <label className="text-xs font-semibold text-slate-500">ประเภท<select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกหมวดหมู่</option>{categories.map(c => <option key={c} value={c}>{c}</option>)}</select></label>
+              <label className="text-xs font-semibold text-slate-500">สถานะ<select value={selectedStatus} onChange={e => setSelectedStatus(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกสถานะ</option>{statuses.map(v => <option key={v} value={v}>{v}</option>)}</select></label>
+              <label className="text-xs font-semibold text-slate-500">หน่วยงานที่เกิดเหตุ<select value={selectedDepartment} onChange={e => setSelectedDepartment(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกหน่วยงาน</option>{departments.map(v => <option key={v} value={v}>{v}</option>)}</select></label>
+              <label className="text-xs font-semibold text-slate-500">ขั้นตอน<select value={selectedProcess} onChange={e => setSelectedProcess(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกขั้นตอน</option>{processes.map(v => <option key={v} value={v}>{v}</option>)}</select></label>
+              <label className="text-xs font-semibold text-slate-500">กลุ่มเหตุการณ์<select value={selectedGroup} onChange={e => setSelectedGroup(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกกลุ่ม</option>{groups.map(v => <option key={v} value={v}>{v}</option>)}</select></label>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2"><span className="text-xs text-slate-500">กำลังแสดง <b className="text-slate-800">{filteredData.length}</b> รายการ</span><button onClick={() => { setSelectedYear('all'); setSelectedMonth('all'); setSelectedCategory('all'); setSelectedStatus('all'); setSelectedDepartment('all'); setSelectedProcess('all'); setSelectedGroup('all'); setDateFrom(''); setDateTo(''); }} className="text-xs font-bold text-maroon-700 hover:underline">ล้างตัวกรองทั้งหมด</button></div>
+          </div>}
         </div>
       </div>
 
