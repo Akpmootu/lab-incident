@@ -98,8 +98,16 @@ export default function DataTable() {
       Swal.fire({ title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถโหลดข้อมูลได้', icon: 'error', confirmButtonColor: '#ef4444' });
     } finally { setLoading(false); }
   };
+  const getFiscalYear = (date: string) => {
+    const parsed = dayjs(date);
+    return parsed.month() >= 9 ? parsed.year() + 1 : parsed.year();
+  };
+  const getFiscalYearRange = (fiscalYear: string) => {
+    const year = Number(fiscalYear);
+    return { start: `${year - 1}-10-01`, end: `${year}-09-30` };
+  };
   const years = useMemo(() => {
-    const uniqueYears = new Set(incidents.map(inc => dayjs(inc.incident_date).format('YYYY')));
+    const uniqueYears = new Set(incidents.map(inc => String(getFiscalYear(inc.incident_date))));
     return Array.from(uniqueYears).sort((a, b) => Number(b) - Number(a));
   }, [incidents]);
 
@@ -128,7 +136,9 @@ export default function DataTable() {
         (inc.responsible_person?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
         (inc.risk_items?.join(', ')?.toLowerCase() || '').includes(searchTerm.toLowerCase());
       
-      const matchYear = filterYear === 'all' || dayjs(inc.incident_date).format('YYYY') === filterYear;
+      const fiscalRange = filterYear === 'all' ? null : getFiscalYearRange(filterYear);
+      const incidentDate = String(inc.incident_date).slice(0, 10);
+      const matchYear = !fiscalRange || (incidentDate >= fiscalRange.start && incidentDate <= fiscalRange.end);
       const matchMonth = filterMonth === 'all' || dayjs(inc.incident_date).format('MM') === filterMonth;
       const matchType = filterType === 'all' || inc.risk_type === filterType;
       const matchImpact = filterImpact === 'all' || inc.impact_level === filterImpact;
@@ -458,7 +468,7 @@ export default function DataTable() {
               <div className="relative"><i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input type="text" placeholder="ค้นหารายละเอียด / ผู้รับผิดชอบ / รายการ" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none focus:border-maroon-500 focus:ring-1 focus:ring-maroon-500" /></div>
               <label className="text-xs font-semibold text-slate-500">ตั้งแต่วันที่<input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm" /></label>
               <label className="text-xs font-semibold text-slate-500">ถึงวันที่<input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm" /></label>
-              <label className="text-xs font-semibold text-slate-500">ปีงบประมาณ<select value={filterYear} onChange={e => setFilterYear(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกปี</option>{years.map(year => <option key={year} value={year}>พ.ศ. {Number(year) + 543}</option>)}</select></label>
+              <label className="text-xs font-semibold text-slate-500">ปีงบประมาณ<select value={filterYear} onChange={e => setFilterYear(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกปี</option>{years.map(year => <option key={year} value={year}>พ.ศ. {Number(year) + 543} (ต.ค. {Number(year) + 542} – ก.ย. {Number(year) + 543})</option>)}</select></label>
               <label className="text-xs font-semibold text-slate-500">ไตรมาสปีงบประมาณ<select value={filterQuarter} onChange={e => setFilterQuarter(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกไตรมาส</option><option value="1">ไตรมาส 1 (ต.ค. - ธ.ค.)</option><option value="2">ไตรมาส 2 (ม.ค. - มี.ค.)</option><option value="3">ไตรมาส 3 (เม.ย. - มิ.ย.)</option><option value="4">ไตรมาส 4 (ก.ค. - ก.ย.)</option></select></label>
               <label className="text-xs font-semibold text-slate-500">เดือน<select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกเดือน</option>{['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'].map((m, i) => <option key={i} value={String(i + 1).padStart(2, '0')}>{m}</option>)}</select></label>
               <label className="text-xs font-semibold text-slate-500">ประเภท<select value={filterType} onChange={e => setFilterType(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกประเภท</option><option value="Clinic">Clinic</option><option value="Non-clinic">Non-clinic</option></select></label>
