@@ -6,6 +6,8 @@ import {
   BarChart,
   Bar,
   CartesianGrid,
+  Cell,
+  LabelList,
   ResponsiveContainer,
   YAxis,
   XAxis,
@@ -36,6 +38,7 @@ export default function Dashboard() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(true);
+  const [tableSort, setTableSort] = useState<{ key: string; direction: "asc" | "desc" }>({ key: "risk", direction: "asc" });
   const tableRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -162,8 +165,17 @@ export default function Dashboard() {
   }));
   const quarterlyTrend = ["1", "2", "3", "4"].map((quarter) => ({
     name: `ไตรมาส ${quarter}`,
-    value: fiscalYearData.filter((inc) => getFiscalQuarter(inc.incident_date) === quarter).length,
+    clinic: fiscalYearData.filter((inc) => getFiscalQuarter(inc.incident_date) === quarter && inc.risk_type === "Clinic").length,
+    nonClinic: fiscalYearData.filter((inc) => getFiscalQuarter(inc.incident_date) === quarter && inc.risk_type === "Non-clinic").length,
   }));
+  const quarterColors = [{ clinic: "#800000", nonClinic: "#d97706" }, { clinic: "#2563eb", nonClinic: "#38bdf8" }, { clinic: "#15803d", nonClinic: "#34d399" }, { clinic: "#7e22ce", nonClinic: "#c084fc" }];
+  const sortedRiskItems = [...uniqueRiskItems].sort((a, b) => {
+    const total = (item: string) => (riskItemsMap.get(item) || []).length;
+    const value = (item: string) => tableSort.key === "risk" ? item : tableSort.key === "total" ? total(item) : (riskItemsMap.get(item) || []).filter((inc) => (viewMode === "monthly" ? getIncidentDay(inc.incident_date) : getIncidentMonth(inc.incident_date)) === tableSort.key).length;
+    const result = typeof value(a) === "number" ? Number(value(a)) - Number(value(b)) : String(value(a)).localeCompare(String(value(b)), "th");
+    return tableSort.direction === "asc" ? result : -result;
+  });
+  const requestTableSort = (key: string) => setTableSort((current) => ({ key, direction: current.key === key && current.direction === "asc" ? "desc" : "asc" }));
 
   const handleExportExcel = async () => {
     setIsExporting(true);
@@ -410,7 +422,7 @@ export default function Dashboard() {
       <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
         <div className="mb-3 flex items-center justify-between gap-3">
           <div><h2 className="font-bold text-slate-800"><i className="fa-solid fa-chart-column mr-2 text-maroon-600" />แนวโน้มความเสี่ยงรายไตรมาส</h2><p className="mt-1 text-xs text-slate-500">ปีงบประมาณ {Number(filterYear) + 543} · เฉพาะหน่วยงาน LAB</p></div>
-          <span className="rounded-full bg-maroon-50 px-3 py-1 text-xs font-bold text-maroon-700">รวม {filteredData.length} รายการ</span>
+          <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold"><span className="rounded-full bg-maroon-50 px-2.5 py-1 text-maroon-700"><i className="fa-solid fa-square mr-1" />Clinic</span><span className="rounded-full bg-orange-50 px-2.5 py-1 text-orange-700"><i className="fa-solid fa-square mr-1" />Non-clinic</span></div>
         </div>
         <div className="h-56 w-full">
           <ResponsiveContainer width="100%" height="100%">
@@ -419,7 +431,14 @@ export default function Dashboard() {
               <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis allowDecimals={false} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={{ fontSize: 12, borderRadius: 12, borderColor: '#f1e5e7' }} />
-              <Bar dataKey="value" name="จำนวนรายการ" fill="#800000" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="clinic" name="Clinic" radius={[8, 8, 0, 0]}>
+                {quarterlyTrend.map((_, index) => <Cell key={`clinic-${index}`} fill={quarterColors[index].clinic} />)}
+                <LabelList dataKey="clinic" position="top" fill="#475569" fontSize={11} fontWeight={700} />
+              </Bar>
+              <Bar dataKey="nonClinic" name="Non-clinic" radius={[8, 8, 0, 0]}>
+                {quarterlyTrend.map((_, index) => <Cell key={`nonclinic-${index}`} fill={quarterColors[index].nonClinic} />)}
+                <LabelList dataKey="nonClinic" position="top" fill="#475569" fontSize={11} fontWeight={700} />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -440,24 +459,24 @@ export default function Dashboard() {
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left border-collapse">
-            <thead className="text-xs text-slate-700 bg-slate-100 border-b border-slate-200">
+            <thead className="sticky top-[76px] z-20 text-xs text-slate-700 bg-slate-100 border-b border-slate-200 shadow-sm">
               <tr>
                 <th className="border border-slate-200 px-2 py-3 text-center w-12">
                   ลำดับ
                 </th>
                 <th className="border border-slate-200 px-4 py-3 min-w-[200px]">
-                  ความเสี่ยง
+                  <button onClick={() => requestTableSort("risk")} className="inline-flex items-center gap-1 font-bold hover:text-maroon-700">ความเสี่ยง <i className={`fa-solid ${tableSort.key === "risk" ? (tableSort.direction === "asc" ? "fa-arrow-up-wide-short text-maroon-600" : "fa-arrow-down-wide-short text-maroon-600") : "fa-sort text-slate-300"}`} /></button>
                 </th>
                 {columns.map((col) => (
                   <th
                     key={col.key}
                     className="border border-slate-200 px-1 py-3 text-center min-w-[30px]"
                   >
-                    {col.label}
+                    <button onClick={() => requestTableSort(col.key)} className="inline-flex items-center gap-1 font-bold hover:text-maroon-700">{col.label}<i className={`fa-solid text-[9px] ${tableSort.key === col.key ? (tableSort.direction === "asc" ? "fa-arrow-up-wide-short text-maroon-600" : "fa-arrow-down-wide-short text-maroon-600") : "fa-sort text-slate-300"}`} /></button>
                   </th>
                 ))}
                 <th className="border border-slate-200 px-2 py-3 text-center">
-                  รวม
+                  <button onClick={() => requestTableSort("total")} className="inline-flex items-center gap-1 font-bold hover:text-maroon-700">รวม <i className={`fa-solid ${tableSort.key === "total" ? (tableSort.direction === "asc" ? "fa-arrow-up-wide-short text-maroon-600" : "fa-arrow-down-wide-short text-maroon-600") : "fa-sort text-slate-300"}`} /></button>
                 </th>
                 <th className="border border-slate-200 px-4 py-3 text-center min-w-[150px]">
                   กราฟแนวโน้ม
@@ -484,7 +503,7 @@ export default function Dashboard() {
                   </td>
                 </tr>
               ) : (
-                uniqueRiskItems.map((item, index) => {
+                sortedRiskItems.map((item, index) => {
                   const itemIncidents = riskItemsMap.get(item) || [];
                   let rowTotal = 0;
 

@@ -23,9 +23,10 @@ export default function Layout({ children }: { children: ReactNode }) {
   const [incidents, setIncidents] = useState<IncidentRecord[]>([]);
   const [online, setOnline] = useState(navigator.onLine);
   const [unresolved, setUnresolved] = useState(0);
+  const [draftCount, setDraftCount] = useState(() => Number(Boolean(localStorage.getItem('lab-incident-form-draft'))) + Number(Boolean(localStorage.getItem('lab-incident-pending-submit'))));
   const location = useLocation();
   const navigate = useNavigate();
-  const deployVersion = '2.3.8';
+  const deployVersion = '2.3.9';
   const deployRef = import.meta.env.VITE_DEPLOY_REF || 'local';
   const activeItem = allItems.find(item => item.path.split('?')[0] === location.pathname) ?? { label: location.pathname === '/' ? 'ภาพรวม' : 'Workspace', icon: 'fa-solid fa-grid-2' };
   const filteredItems = useMemo(() => allItems.filter(item => `${item.label} ${item.description}`.toLowerCase().includes(query.toLowerCase())).slice(0, 6), [query]);
@@ -37,7 +38,10 @@ export default function Layout({ children }: { children: ReactNode }) {
     const onKey = (event: KeyboardEvent) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setPaletteOpen(true); } if (!paletteOpen && event.key.toLowerCase() === 'n' && !['INPUT', 'TEXTAREA', 'SELECT'].includes((event.target as HTMLElement)?.tagName)) { event.preventDefault(); navigate('/report'); } if (event.key === 'Escape') setPaletteOpen(false); };
     window.addEventListener('keydown', onKey);
     fetchIncidents().then(items => { setIncidents(items); setUnresolved(items.filter(item => !item.resolution_status || item.resolution_status === 'Open' || item.resolution_status === 'In Progress').length); }).catch(() => undefined);
-    return () => { window.removeEventListener('online', update); window.removeEventListener('offline', update); window.removeEventListener('keydown', onKey); };
+    const updateDraftCount = () => setDraftCount(Number(Boolean(localStorage.getItem('lab-incident-form-draft'))) + Number(Boolean(localStorage.getItem('lab-incident-pending-submit'))));
+    window.addEventListener('storage', updateDraftCount);
+    window.addEventListener('focus', updateDraftCount);
+    return () => { window.removeEventListener('online', update); window.removeEventListener('offline', update); window.removeEventListener('keydown', onKey); window.removeEventListener('storage', updateDraftCount); window.removeEventListener('focus', updateDraftCount); };
   }, [navigate, paletteOpen]);
 
   useEffect(() => {
@@ -50,7 +54,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const go = (path: string) => { setPaletteOpen(false); setQuery(''); navigate(path); };
   const Nav = ({ mobile = false }: { mobile?: boolean }) => <nav className={cn('flex flex-col', mobile ? 'p-4' : 'px-3 py-5')} aria-label="เมนูหลัก">
     {groups.map(group => <div key={group.label} className="mb-5"><p className={cn('px-3 pb-2 text-[10px] font-bold uppercase tracking-[.16em] text-slate-400', collapsed && !mobile && 'text-center text-[8px]')}>{collapsed && !mobile ? '•' : group.label}</p>{group.items.map(item => { const isActive = location.pathname === item.path.split('?')[0] && (item.path.split('?')[0] !== '/data' || !location.search.includes('status=open') || item.label === 'ประเด็นที่ยังไม่ปิด'); return <Link key={item.path} to={item.path} onClick={() => setMobileOpen(false)} aria-current={isActive ? 'page' : undefined} title={collapsed && !mobile ? `${item.label} — ${item.description}` : undefined} className={cn('group relative mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-maroon-300', isActive ? 'bg-maroon-50 font-bold text-maroon-800 shadow-sm ring-1 ring-maroon-100' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900', collapsed && !mobile && 'justify-center px-2')}>
-      {isActive && <span className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-maroon-600" />}<span className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm transition-colors', isActive ? 'bg-maroon-600 text-white shadow-sm shadow-maroon-600/20' : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200')}><i className={item.icon} /></span><span className={cn('truncate', collapsed && !mobile && 'hidden')}>{item.label}</span>{item.label === 'ประเด็นที่ยังไม่ปิด' && !collapsed && !mobile && <span className="ml-auto rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">{unresolved}</span>}{collapsed && !mobile && <span className="pointer-events-none absolute left-full z-50 ml-3 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1.5 text-xs text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">{item.label}</span>}
+      {isActive && <span className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-maroon-600" />}<span className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm transition-colors', isActive ? 'bg-maroon-600 text-white shadow-sm shadow-maroon-600/20' : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200')}><i className={item.icon} /></span><span className={cn('truncate', collapsed && !mobile && 'hidden')}>{item.label}</span>{item.label === 'ประเด็นที่ยังไม่ปิด' && !collapsed && !mobile && <span className="ml-auto rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">{unresolved}</span>}{item.label === 'Offline Drafts' && !collapsed && !mobile && draftCount > 0 && <span className="ml-auto rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">{draftCount}</span>}{collapsed && !mobile && <span className="pointer-events-none absolute left-full z-50 ml-3 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1.5 text-xs text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">{item.label}</span>}
     </Link>; })}</div>)}
   </nav>;
 
