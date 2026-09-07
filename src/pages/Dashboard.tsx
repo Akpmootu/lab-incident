@@ -169,6 +169,7 @@ export default function Dashboard() {
     nonClinic: fiscalYearData.filter((inc) => getFiscalQuarter(inc.incident_date) === quarter && inc.risk_type === "Non-clinic").length,
   }));
   const quarterColors = [{ clinic: "#800000", nonClinic: "#d97706" }, { clinic: "#2563eb", nonClinic: "#38bdf8" }, { clinic: "#15803d", nonClinic: "#34d399" }, { clinic: "#7e22ce", nonClinic: "#c084fc" }];
+  const quarterLabels = ["ต.ค. – ธ.ค.", "ม.ค. – มี.ค.", "เม.ย. – มิ.ย.", "ก.ค. – ก.ย."];
   const sortedRiskItems = [...uniqueRiskItems].sort((a, b) => {
     const total = (item: string) => (riskItemsMap.get(item) || []).length;
     const value = (item: string) => tableSort.key === "risk" ? item : tableSort.key === "total" ? total(item) : (riskItemsMap.get(item) || []).filter((inc) => (viewMode === "monthly" ? getIncidentDay(inc.incident_date) : getIncidentMonth(inc.incident_date)) === tableSort.key).length;
@@ -442,6 +443,9 @@ export default function Dashboard() {
             </BarChart>
           </ResponsiveContainer>
         </div>
+        <div className="mt-3 grid grid-cols-2 gap-2 border-t border-slate-100 pt-3 lg:grid-cols-4">
+          {quarterlyTrend.map((quarter, index) => <div key={quarter.name} className="rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2.5"><p className="text-xs font-extrabold text-slate-800"><span className="mr-1 inline-block h-2 w-2 rounded-full" style={{ backgroundColor: quarterColors[index].clinic }} />{quarter.name}</p><p className="mt-0.5 text-[10px] text-slate-400">{quarterLabels[index]}</p><div className="mt-2 flex items-center gap-3 text-[11px] font-bold"><span style={{ color: quarterColors[index].clinic }}>Clinic {quarter.clinic}</span><span style={{ color: quarterColors[index].nonClinic }}>Non-clinic {quarter.nonClinic}</span></div></div>)}
+        </div>
       </div>
 
       {/* Detailed Table with Trend Graphs */}
@@ -459,7 +463,7 @@ export default function Dashboard() {
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left border-collapse">
-            <thead className="sticky top-[76px] z-20 text-xs text-slate-700 bg-slate-100 border-b border-slate-200 shadow-sm">
+            <thead className="text-xs text-slate-700 bg-slate-100 border-b border-slate-200 shadow-sm [&>tr>th]:sticky [&>tr>th]:top-[76px] [&>tr>th]:z-20 [&>tr>th]:bg-slate-100">
               <tr>
                 <th className="border border-slate-200 px-2 py-3 text-center w-12">
                   ลำดับ
