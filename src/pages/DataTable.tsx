@@ -157,7 +157,7 @@ export default function DataTable() {
   }, [incidents, searchTerm, filterYear, filterMonth, filterType, filterImpact, filterPerson, filterStatus, filterDate, filterQuarter, filterStatusLocal, filterDepartment, dateFrom, dateTo]);
   const riskCatalog = useMemo(() => Array.from(new Set(incidents.flatMap(inc => [...(inc.risk_items || []), ...(inc.other_risk_item ? ['รายการอื่นๆ'] : [])]))), [incidents]);
   const riskNumberMap = useMemo(() => new Map(riskCatalog.map((item, index) => [item, index + 1])), [riskCatalog]);
-  const getRiskLabel = (incident: Incident) => incident.other_risk_item ? 'รายการอื่นๆ' : incident.risk_items?.[0] || 'ไม่ระบุ';
+  const getRiskLabel = (incident: Incident) => incident.other_risk_item || incident.risk_items?.[0] || 'ไม่ระบุ';
   const sortedData = useMemo(() => {
     const valueFor = (incident: Incident) => {
       if (sortConfig.key === 'risk') return getRiskLabel(incident);
@@ -717,7 +717,7 @@ export default function DataTable() {
                             </span>
                           </td>
                           <td className="px-4 py-3 max-w-[200px] truncate" title={incident.risk_items?.join(', ') || incident.other_risk_item || '-'}>
-                            <div className="flex min-w-0 items-center gap-2"><span className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[10px] font-extrabold text-white', incident.other_risk_item ? 'bg-violet-600' : 'bg-maroon-700')} title={incident.other_risk_item ? 'กลุ่มรายการอื่นๆ' : `ความเสี่ยงลำดับ ${riskNumberMap.get(getRiskLabel(incident)) || '-'}`}>{incident.other_risk_item ? 'อื่น' : riskNumberMap.get(getRiskLabel(incident)) || '-'}</span><span className="truncate">{incident.other_risk_item ? 'รายการอื่นๆ' : incident.risk_items?.join(', ') || '-'}</span></div>
+                            <div className="flex min-w-0 items-center gap-2"><span className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[10px] font-extrabold text-white', incident.other_risk_item ? 'bg-violet-600' : 'bg-maroon-700')} title={incident.other_risk_item ? 'หมายเลขกลุ่มรายการอื่นๆ' : `ความเสี่ยงลำดับ ${riskNumberMap.get(getRiskLabel(incident)) || '-'}`}>{riskNumberMap.get(incident.other_risk_item ? 'รายการอื่นๆ' : getRiskLabel(incident)) || '-'} </span><span className="truncate">{incident.other_risk_item || incident.risk_items?.join(', ') || '-'}</span></div>
                           </td>
                           <td className="px-4 py-3">
                             <span className={cn('inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold ring-1 ring-inset', getDepartmentStyle(incident.causing_department))}>
