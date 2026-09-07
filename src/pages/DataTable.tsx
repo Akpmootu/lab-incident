@@ -47,6 +47,7 @@ export default function DataTable() {
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [filtersHydrated, setFiltersHydrated] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'incident_date', direction: 'desc' });
   const pageSize = 20;
 
   // Edit State
@@ -154,8 +155,27 @@ export default function DataTable() {
       return matchSearch && matchYear && matchMonth && matchType && matchImpact && matchPerson && matchStatus && matchDate && matchQuarter && matchDepartment && matchFrom && matchTo;
     });
   }, [incidents, searchTerm, filterYear, filterMonth, filterType, filterImpact, filterPerson, filterStatus, filterDate, filterQuarter, filterStatusLocal, filterDepartment, dateFrom, dateTo]);
+  const riskCatalog = useMemo(() => Array.from(new Set(incidents.flatMap(inc => [...(inc.risk_items || []), ...(inc.other_risk_item ? ['รายการอื่นๆ'] : [])]))), [incidents]);
+  const riskNumberMap = useMemo(() => new Map(riskCatalog.map((item, index) => [item, index + 1])), [riskCatalog]);
+  const getRiskLabel = (incident: Incident) => incident.other_risk_item ? 'รายการอื่นๆ' : incident.risk_items?.[0] || 'ไม่ระบุ';
+  const sortedData = useMemo(() => {
+    const valueFor = (incident: Incident) => {
+      if (sortConfig.key === 'risk') return getRiskLabel(incident);
+      if (sortConfig.key === 'department') return incident.causing_department || '';
+      if (sortConfig.key === 'status') return incident.resolution_status || 'Open';
+      if (sortConfig.key === 'impact') return incident.impact_level || '';
+      if (sortConfig.key === 'type') return incident.risk_type || '';
+      if (sortConfig.key === 'person') return incident.responsible_person || '';
+      return incident.incident_date || '';
+    };
+    return [...filteredData].sort((a, b) => {
+      const comparison = String(valueFor(a)).localeCompare(String(valueFor(b)), 'th', { numeric: true });
+      return sortConfig.direction === 'asc' ? comparison : -comparison;
+    });
+  }, [filteredData, sortConfig]);
   const pageCount = Math.max(1, Math.ceil(filteredData.length / pageSize));
-  const paginatedData = useMemo(() => filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize), [filteredData, currentPage]);
+  const paginatedData = useMemo(() => sortedData.slice((currentPage - 1) * pageSize, currentPage * pageSize), [sortedData, currentPage]);
+  const requestSort = (key: string) => setSortConfig(current => ({ key, direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc' }));
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, filterYear, filterMonth, filterType, filterImpact, filterPerson, filterQuarter, filterStatusLocal, filterDepartment, dateFrom, dateTo, filterStatus, filterDate]);
@@ -487,13 +507,7 @@ export default function DataTable() {
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-slate-700 uppercase bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <th className="px-4 py-3">วันที่</th>
-                  <th className="px-4 py-3">ประเภท</th>
-                  <th className="px-4 py-3">รายการความเสี่ยง</th>
-                  <th className="px-4 py-3">หน่วยงานที่เกิดเหตุ</th>
-                  <th className="px-4 py-3 text-center">ระดับ</th>
-                  <th className="px-4 py-3">สถานะ</th>
-                  <th className="px-4 py-3">ผู้รับผิดชอบ</th>
+                  {([['incident_date', 'วันที่'], ['type', 'ประเภท'], ['risk', 'รายการความเสี่ยง'], ['department', 'หน่วยงานที่เกิดเหตุ'], ['impact', 'ระดับ'], ['status', 'สถานะ'], ['person', 'ผู้รับผิดชอบ']] as const).map(([key, label]) => <th key={key} className={cn('px-4 py-3', key === 'impact' && 'text-center')}><button onClick={() => requestSort(key)} className="inline-flex items-center gap-1.5 font-bold transition hover:text-maroon-700" title={`เรียงตาม${label}`}>{label}<i className={cn('fa-solid text-[10px]', sortConfig.key === key ? (sortConfig.direction === 'asc' ? 'fa-arrow-up-wide-short text-maroon-600' : 'fa-arrow-down-wide-short text-maroon-600') : 'fa-sort text-slate-300')} /></button></th>)}
                   <th className="px-4 py-3 text-center">จัดการ</th>
                 </tr>
               </thead>
@@ -703,7 +717,7 @@ export default function DataTable() {
                             </span>
                           </td>
                           <td className="px-4 py-3 max-w-[200px] truncate" title={incident.risk_items?.join(', ') || incident.other_risk_item || '-'}>
-                            {incident.risk_items?.join(', ') || incident.other_risk_item || '-'}
+                            <div className="flex min-w-0 items-center gap-2"><span className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[10px] font-extrabold text-white', incident.other_risk_item ? 'bg-violet-600' : 'bg-maroon-700')} title={incident.other_risk_item ? 'กลุ่มรายการอื่นๆ' : `ความเสี่ยงลำดับ ${riskNumberMap.get(getRiskLabel(incident)) || '-'}`}>{incident.other_risk_item ? 'อื่น' : riskNumberMap.get(getRiskLabel(incident)) || '-'}</span><span className="truncate">{incident.other_risk_item ? 'รายการอื่นๆ' : incident.risk_items?.join(', ') || '-'}</span></div>
                           </td>
                           <td className="px-4 py-3">
                             <span className={cn('inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold ring-1 ring-inset', getDepartmentStyle(incident.causing_department))}>

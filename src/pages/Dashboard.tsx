@@ -3,6 +3,9 @@ import { fetchIncidents as fetchIncidentsFromSheet } from "../lib/dataApi";
 import {
   LineChart,
   Line,
+  BarChart,
+  Bar,
+  CartesianGrid,
   ResponsiveContainer,
   YAxis,
   XAxis,
@@ -82,6 +85,17 @@ export default function Dashboard() {
     const inTo = !dateTo || inc.incident_date <= dateTo;
     return inPeriod && inQuarter && inType && inGroup && inDepartment && inStatus && inFrom && inTo;
   });
+  const fiscalYearData = incidents.filter((inc) => {
+    const incidentDate = String(inc.incident_date || "").slice(0, 10);
+    const year = parseInt(filterYear);
+    const inFiscalYear = incidentDate >= `${year - 1}-10-01` && incidentDate <= `${year}-09-30`;
+    return String(inc.causing_department || "").trim().toUpperCase() === "LAB" && inFiscalYear &&
+      (filterQuarter === "all" || getFiscalQuarter(inc.incident_date) === filterQuarter) &&
+      (filterType === "all" || inc.risk_type === filterType) &&
+      (filterGroup === "all" || inc.group_type === filterGroup) &&
+      (filterStatus === "all" || (inc.resolution_status || "Open") === filterStatus) &&
+      (!dateFrom || incidentDate >= dateFrom) && (!dateTo || incidentDate <= dateTo);
+  });
 
   // Summary Cards Data
   const summary = {
@@ -107,7 +121,7 @@ export default function Dashboard() {
       riskItemsMap.get(item)!.push(inc);
     });
     if (inc.other_risk_item) {
-      const item = inc.other_risk_item;
+      const item = "รายการอื่นๆ";
       if (!riskItemsMap.has(item)) riskItemsMap.set(item, []);
       riskItemsMap.get(item)!.push(inc);
     }
@@ -145,6 +159,10 @@ export default function Dashboard() {
   const maxHeatValue = Math.max(1, ...uniqueRiskItems.flatMap(item => {
     const itemIncidents = riskItemsMap.get(item) || [];
     return columns.map(col => itemIncidents.filter(inc => (viewMode === "monthly" ? getIncidentDay(inc.incident_date) : getIncidentMonth(inc.incident_date)) === col.key).length);
+  }));
+  const quarterlyTrend = ["1", "2", "3", "4"].map((quarter) => ({
+    name: `ไตรมาส ${quarter}`,
+    value: fiscalYearData.filter((inc) => getFiscalQuarter(inc.incident_date) === quarter).length,
   }));
 
   const handleExportExcel = async () => {
@@ -386,6 +404,24 @@ export default function Dashboard() {
           <p className="text-2xl font-bold text-orange-800">
             {summary.nearMiss}
           </p>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div><h2 className="font-bold text-slate-800"><i className="fa-solid fa-chart-column mr-2 text-maroon-600" />แนวโน้มความเสี่ยงรายไตรมาส</h2><p className="mt-1 text-xs text-slate-500">ปีงบประมาณ {Number(filterYear) + 543} · เฉพาะหน่วยงาน LAB</p></div>
+          <span className="rounded-full bg-maroon-50 px-3 py-1 text-xs font-bold text-maroon-700">รวม {filteredData.length} รายการ</span>
+        </div>
+        <div className="h-56 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={quarterlyTrend} margin={{ top: 8, right: 12, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1e5e7" vertical={false} />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={{ fontSize: 12, borderRadius: 12, borderColor: '#f1e5e7' }} />
+              <Bar dataKey="value" name="จำนวนรายการ" fill="#800000" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 

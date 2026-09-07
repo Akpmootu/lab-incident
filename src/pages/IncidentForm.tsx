@@ -839,6 +839,9 @@ export default function IncidentForm() {
                     <i className="fa-solid fa-building text-maroon-500 mr-2"></i>
                     หน่วยงานที่ทำให้เกิดอุบัติการณ์ <span className="text-red-500">*</span>
                   </label>
+                  <button type="button" onClick={() => handleInputChange("causing_department", "LAB")} className={cn("mb-3 inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold transition", formData.causing_department === "LAB" ? "border-maroon-300 bg-maroon-50 text-maroon-800 ring-2 ring-maroon-100" : "border-slate-200 bg-white text-slate-600 hover:border-maroon-200 hover:text-maroon-700")}>
+                    <i className="fa-solid fa-flask" /> ห้องปฏิบัติการ (LAB) <span className="text-[10px] font-normal text-slate-400">เลือกด่วน</span>
+                  </button>
                   <div className="relative">
                     <select
                       value={formData.causing_department}
@@ -867,6 +870,7 @@ export default function IncidentForm() {
                       <i className="fa-solid fa-chevron-down"></i>
                     </div>
                   </div>
+                  <p className="mt-2 text-xs text-slate-400"><i className="fa-solid fa-circle-info mr-1" />เลือก LAB หากเหตุการณ์เกิดจากห้องปฏิบัติการโดยตรง</p>
                   {errors.causing_department && (
                     <p className="text-red-500 text-xs font-medium flex items-center gap-1 mt-1">
                       <i className="fa-solid fa-circle-exclamation"></i> กรุณาเลือกหน่วยงานที่ทำให้เกิดอุบัติการณ์
