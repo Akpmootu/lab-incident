@@ -503,9 +503,9 @@ export default function DataTable() {
           </div>
 
           {/* Table */}
-          <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <div className="max-h-[70vh] overflow-auto rounded-xl border border-slate-200">
             <table className="w-full text-sm text-left">
-              <thead className="text-xs text-slate-700 uppercase bg-slate-50 border-b border-slate-200">
+              <thead className="text-xs text-slate-700 uppercase bg-slate-50 border-b border-slate-200 shadow-sm [&>tr>th]:sticky [&>tr>th]:top-0 [&>tr>th]:z-20 [&>tr>th]:bg-slate-50">
                 <tr>
                   {([['incident_date', 'วันที่'], ['type', 'ประเภท'], ['risk', 'รายการความเสี่ยง'], ['department', 'หน่วยงานที่เกิดเหตุ'], ['impact', 'ระดับ'], ['status', 'สถานะ'], ['person', 'ผู้รับผิดชอบ']] as const).map(([key, label]) => <th key={key} className={cn('px-4 py-3', key === 'impact' && 'text-center')}><button onClick={() => requestSort(key)} className="inline-flex items-center gap-1.5 font-bold transition hover:text-maroon-700" title={`เรียงตาม${label}`}>{label}<i className={cn('fa-solid text-[10px]', sortConfig.key === key ? (sortConfig.direction === 'asc' ? 'fa-arrow-up-wide-short text-maroon-600' : 'fa-arrow-down-wide-short text-maroon-600') : 'fa-sort text-slate-300')} /></button></th>)}
                   <th className="px-4 py-3 text-center">จัดการ</th>
@@ -787,7 +787,7 @@ export default function DataTable() {
             <p className="text-xs text-slate-500">หน้า {currentPage} จาก {pageCount} · แสดง {Math.min((currentPage - 1) * pageSize + 1, filteredData.length)}–{Math.min(currentPage * pageSize, filteredData.length)} จาก {filteredData.length} รายการ</p>
             <div className="flex items-center gap-2">
               <button onClick={() => setCurrentPage(page => Math.max(1, page - 1))} disabled={currentPage === 1} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-maroon-200 hover:text-maroon-700 disabled:cursor-not-allowed disabled:opacity-40" aria-label="หน้าก่อนหน้า"><i className="fa-solid fa-chevron-left" /></button>
-              <span className="rounded-xl bg-maroon-50 px-3 py-2 text-sm font-bold text-maroon-800">{currentPage}</span>
+              <div className="flex max-w-[min(58vw,420px)] items-center gap-1 overflow-x-auto py-1">{Array.from({ length: pageCount }, (_, index) => index + 1).map(page => <button key={page} onClick={() => setCurrentPage(page)} aria-current={currentPage === page ? 'page' : undefined} className={cn('min-w-9 rounded-xl border px-3 py-2 text-sm font-bold transition', currentPage === page ? 'border-maroon-700 bg-maroon-700 text-white shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:border-maroon-200 hover:text-maroon-700')}>{page}</button>)}</div>
               <button onClick={() => setCurrentPage(page => Math.min(pageCount, page + 1))} disabled={currentPage === pageCount} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-maroon-200 hover:text-maroon-700 disabled:cursor-not-allowed disabled:opacity-40" aria-label="หน้าถัดไป"><i className="fa-solid fa-chevron-right" /></button>
             </div>
           </div>}
