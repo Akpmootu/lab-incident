@@ -25,7 +25,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const [unresolved, setUnresolved] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
-  const deployVersion = '2.3.6';
+  const deployVersion = '2.3.7';
   const deployRef = import.meta.env.VITE_DEPLOY_REF || 'local';
   const activeItem = allItems.find(item => item.path.split('?')[0] === location.pathname) ?? { label: location.pathname === '/' ? 'ภาพรวม' : 'Workspace', icon: 'fa-solid fa-grid-2' };
   const filteredItems = useMemo(() => allItems.filter(item => `${item.label} ${item.description}`.toLowerCase().includes(query.toLowerCase())).slice(0, 6), [query]);

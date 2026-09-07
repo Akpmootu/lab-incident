@@ -109,6 +109,7 @@ export default function IncidentForm() {
   >({});
   const [personCounts, setPersonCounts] = useState<Record<string, number>>({});
   const [deptCounts, setDeptCounts] = useState<Record<string, number>>({});
+  const [customRiskItems, setCustomRiskItems] = useState<string[]>([]);
   const [isOffline, setIsOffline] = useState(() => !navigator.onLine);
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
   const hydrated = useRef(false);
@@ -175,10 +176,11 @@ export default function IncidentForm() {
 
   const fetchRiskItemPopularity = async () => {
     try {
-      const { counts, pCounts, dCounts } = await fetchIncidentPopularity();
+      const { counts, pCounts, dCounts, incidents } = await fetchIncidentPopularity();
       setRiskItemPopularity(counts);
       setPersonCounts(pCounts);
       setDeptCounts(dCounts);
+      setCustomRiskItems(Array.from(new Set((incidents || []).map((incident) => String(incident.other_risk_item || '').trim()).filter(Boolean))));
     } catch (err) {
       console.error("Error fetching popularity:", err);
     }
@@ -340,10 +342,12 @@ export default function IncidentForm() {
       items =
         RISK_ITEMS[formData.process_type as keyof typeof RISK_ITEMS] || [];
 
+    const customItems = customRiskItems.filter((item) => !items.includes(item));
     // Sort by popularity
     items = [...items].sort(
       (a, b) => (riskItemPopularity[b] || 0) - (riskItemPopularity[a] || 0),
     );
+    items = [...items, ...customItems.sort((a, b) => (riskItemPopularity[b] || 0) - (riskItemPopularity[a] || 0))];
 
     // Filter by search
     if (riskItemSearch) {

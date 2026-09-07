@@ -121,7 +121,7 @@ export default function Dashboard() {
       riskItemsMap.get(item)!.push(inc);
     });
     if (inc.other_risk_item) {
-      const item = "รายการอื่นๆ";
+      const item = String(inc.other_risk_item).trim();
       if (!riskItemsMap.has(item)) riskItemsMap.set(item, []);
       riskItemsMap.get(item)!.push(inc);
     }
