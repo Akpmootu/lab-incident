@@ -461,9 +461,9 @@ export default function Dashboard() {
               : `ปีงบประมาณ ${Number(filterYear) + 543}`}
           </span>
         </div>
-        <div className="overflow-x-auto">
+        <div className="max-h-[70vh] overflow-auto rounded-b-2xl">
           <table className="w-full text-sm text-left border-collapse">
-            <thead className="text-xs text-slate-700 bg-slate-100 border-b border-slate-200 shadow-sm [&>tr>th]:sticky [&>tr>th]:top-[76px] [&>tr>th]:z-20 [&>tr>th]:bg-slate-100">
+            <thead className="text-xs text-slate-700 bg-slate-100 border-b border-slate-200 shadow-sm [&>tr>th]:sticky [&>tr>th]:top-0 [&>tr>th]:z-20 [&>tr>th]:bg-slate-100">
               <tr>
                 <th className="border border-slate-200 px-2 py-3 text-center w-12">
                   ลำดับ

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { fetchIncidents as fetchIncidentsFromSheet } from '../lib/dataApi';
 import Swal from 'sweetalert2';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, LabelList,
   PieChart, Pie, Cell, Legend
 } from 'recharts';
 import { cn } from '../lib/utils';
@@ -13,6 +13,8 @@ import ExcelJS from 'exceljs';
 import dayjs from 'dayjs';
 
 const COLORS = ['#800000', '#991b1b', '#b91c1c', '#dc2626', '#ef4444', '#f87171', '#fca5a5'];
+const MONTH_BAR_COLORS = ['#800000', '#b45309', '#2563eb', '#15803d', '#7e22ce', '#be123c', '#0f766e', '#c2410c', '#4338ca', '#047857', '#a21caf', '#334155'];
+const EXECUTIVE_BAR_COLORS = ['#800000', '#2563eb', '#15803d', '#d97706', '#7e22ce'];
 
 const MONTHS_TH = [
   'ต.ค.', 'พ.ย.', 'ธ.ค.', 'ม.ค.', 'ก.พ.', 'มี.ค.', 
@@ -521,14 +523,16 @@ export default function ChartDashboard() {
                 <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} allowDecimals={false} />
                 <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: '#f1f5f9' }} />
-                <Bar dataKey="count" fill="#800000" radius={[4, 4, 0, 0]} maxBarSize={40}>
+                <Bar dataKey="count" name="จำนวนอุบัติการณ์" fill="#800000" radius={[4, 4, 0, 0]} maxBarSize={40}>
                   {monthlyTrendData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.count > 0 ? '#800000' : '#e2e8f0'} />
+                    <Cell key={`cell-${index}`} fill={entry.count > 0 ? MONTH_BAR_COLORS[index] : '#e2e8f0'} />
                   ))}
+                  <LabelList dataKey="count" position="top" fill="#475569" fontSize={11} fontWeight={700} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
+          <div className="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600"><span className="font-bold text-slate-800">อ่านกราฟ:</span> สีของแท่งแยกตามเดือนงบประมาณ และตัวเลขด้านบนคือจำนวนรายการของเดือนนั้น</div>
         </motion.div>
 
         {/* Proportion Donut Chart */}
@@ -685,7 +689,10 @@ export default function ChartDashboard() {
                   <XAxis type="number" hide />
                   <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} width={100} />
                   <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: '#f1f5f9' }} />
-                  <Bar dataKey="value" fill="#800000" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fill: '#64748b', fontSize: 12, fontWeight: 'bold' }} />
+                  <Bar dataKey="value" name="จำนวนรายการ" radius={[0, 4, 4, 0]} barSize={20}>
+                    {topReporters.map((_, index) => <Cell key={`reporter-${index}`} fill={EXECUTIVE_BAR_COLORS[index % EXECUTIVE_BAR_COLORS.length]} />)}
+                    <LabelList dataKey="value" position="right" fill="#475569" fontSize={12} fontWeight={700} />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -716,7 +723,10 @@ export default function ChartDashboard() {
                   <XAxis type="number" hide />
                   <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} width={100} />
                   <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: '#f1f5f9' }} />
-                  <Bar dataKey="value" fill="#800000" radius={[0, 4, 4, 0]} barSize={20} label={{ position: 'right', fill: '#64748b', fontSize: 12, fontWeight: 'bold' }} />
+                  <Bar dataKey="value" name="จำนวนรายการ" radius={[0, 4, 4, 0]} barSize={20}>
+                    {topDepartments.map((_, index) => <Cell key={`department-${index}`} fill={EXECUTIVE_BAR_COLORS[index % EXECUTIVE_BAR_COLORS.length]} />)}
+                    <LabelList dataKey="value" position="right" fill="#475569" fontSize={12} fontWeight={700} />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             ) : (
