@@ -347,7 +347,7 @@ export default function IncidentForm() {
     items = [...items].sort(
       (a, b) => (riskItemPopularity[b] || 0) - (riskItemPopularity[a] || 0),
     );
-    items = [...items, ...customItems.sort((a, b) => (riskItemPopularity[b] || 0) - (riskItemPopularity[a] || 0))];
+    items = [...items, ...customItems].sort((a, b) => (riskItemPopularity[b] || 0) - (riskItemPopularity[a] || 0));
 
     // Filter by search
     if (riskItemSearch) {
@@ -357,6 +357,15 @@ export default function IncidentForm() {
     }
 
     return items;
+  };
+  const getRiskFrequencyStyle = (item: string) => {
+    const count = Number(riskItemPopularity[item] || 0);
+    const max = Math.max(1, ...Object.values(riskItemPopularity).map(Number));
+    const ratio = count / max;
+    if (ratio >= 0.75) return { badge: 'bg-red-100 text-red-700 ring-red-200', label: 'ใช้บ่อยมาก' };
+    if (ratio >= 0.5) return { badge: 'bg-orange-100 text-orange-700 ring-orange-200', label: 'ใช้บ่อย' };
+    if (ratio >= 0.25) return { badge: 'bg-amber-100 text-amber-700 ring-amber-200', label: 'ใช้ปานกลาง' };
+    return { badge: 'bg-emerald-100 text-emerald-700 ring-emerald-200', label: count ? 'ใช้น้อย' : 'ยังไม่มีประวัติ' };
   };
 
   const renderStepIndicator = () => (
@@ -601,6 +610,7 @@ export default function IncidentForm() {
                   />
                 </div>
                 {Object.entries(riskItemPopularity).filter(([, count]) => Number(count) > 0).slice(0, 3).length > 0 && <p className="text-xs text-slate-500"><i className="fa-solid fa-sparkles mr-1 text-amber-500" />แนะนำจากรายการที่พบบ่อย — รายการด้านล่างเรียงตามความถี่การบันทึก</p>}
+                <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500"><span className="font-semibold">ความถี่การบันทึก:</span><span className="rounded-full bg-red-100 px-2 py-1 text-red-700">มาก</span><span className="rounded-full bg-orange-100 px-2 py-1 text-orange-700">บ่อย</span><span className="rounded-full bg-amber-100 px-2 py-1 text-amber-700">ปานกลาง</span><span className="rounded-full bg-emerald-100 px-2 py-1 text-emerald-700">น้อย</span></div>
 
                 <div
                   className={cn(
@@ -629,16 +639,8 @@ export default function IncidentForm() {
                         />
                         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-white opacity-0 peer-checked:opacity-100 pointer-events-none"></div>
                       </div>
-                      <span
-                        className={cn(
-                          "text-sm",
-                          formData.risk_items.includes(item)
-                            ? "text-maroon-900 font-medium"
-                            : "text-slate-700",
-                        )}
-                      >
-                        {item}
-                      </span>
+                      <span className={cn("min-w-0 flex-1 text-sm", formData.risk_items.includes(item) ? "text-maroon-900 font-medium" : "text-slate-700")}>{item}</span>
+                      <span className={cn("shrink-0 rounded-full px-2 py-1 text-[11px] font-bold ring-1 ring-inset", getRiskFrequencyStyle(item).badge)} title={getRiskFrequencyStyle(item).label}><i className="fa-solid fa-chart-simple mr-1" />{riskItemPopularity[item] || 0} ครั้ง</span>
                     </label>
                   ))}
                   {getRiskItemsList().length === 0 && (

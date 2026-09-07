@@ -79,6 +79,8 @@ export async function fetchIncidentPopularity() {
   const dCounts: Record<string, number> = {};
   for (const incident of incidents) {
     for (const item of incident.risk_items || []) counts[item] = (counts[item] || 0) + 1;
+    const customItem = String(incident.other_risk_item || '').trim();
+    if (customItem) counts[customItem] = (counts[customItem] || 0) + 1;
     if (incident.responsible_person) pCounts[incident.responsible_person] = (pCounts[incident.responsible_person] || 0) + 1;
     if (incident.causing_department) dCounts[incident.causing_department] = (dCounts[incident.causing_department] || 0) + 1;
   }
