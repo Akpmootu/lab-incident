@@ -43,7 +43,6 @@ export default function ChartDashboard() {
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
   const [selectedProcess, setSelectedProcess] = useState<string>('all');
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
@@ -77,7 +76,6 @@ export default function ChartDashboard() {
   const departments = useMemo(() => Array.from(new Set(data.map(d => String(d.causing_department || '').trim()).filter(Boolean))).sort(), [data]);
   const processes = useMemo(() => Array.from(new Set(data.map(d => String(d.process_type || '').trim()).filter(Boolean))).sort(), [data]);
   const groups = useMemo(() => Array.from(new Set(data.map(d => String(d.group_type || '').trim()).filter(Boolean))).sort(), [data]);
-  const statuses = ['Open', 'In Progress', 'Resolved', 'Verified', 'Reopened', 'Cancelled'];
 
   const categories = useMemo(() => {
     const cats = new Set<string>();
@@ -98,7 +96,6 @@ export default function ChartDashboard() {
       if (selectedYear !== 'all' && fy !== selectedYear) return false;
       if (selectedMonth !== 'all' && fm !== selectedMonth) return false;
       if (selectedCategory !== 'all' && cat !== selectedCategory) return false;
-      if (selectedStatus !== 'all' && (item.resolution_status || 'Open') !== selectedStatus) return false;
       if (selectedDepartment !== 'all' && String(item.causing_department || '').trim() !== selectedDepartment) return false;
       if (selectedProcess !== 'all' && String(item.process_type || '').trim() !== selectedProcess) return false;
       if (selectedGroup !== 'all' && String(item.group_type || '').trim() !== selectedGroup) return false;
@@ -106,12 +103,12 @@ export default function ChartDashboard() {
       if (dateTo && String(item.incident_date).slice(0, 10) > dateTo) return false;
       return true;
     });
-  }, [data, selectedYear, selectedMonth, selectedCategory, selectedStatus, selectedDepartment, selectedProcess, selectedGroup, dateFrom, dateTo]);
+  }, [data, selectedYear, selectedMonth, selectedCategory, selectedDepartment, selectedProcess, selectedGroup, dateFrom, dateTo]);
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedYear, selectedMonth, selectedCategory, selectedStatus, selectedDepartment, selectedProcess, selectedGroup, dateFrom, dateTo]);
+  }, [selectedYear, selectedMonth, selectedCategory, selectedDepartment, selectedProcess, selectedGroup, dateFrom, dateTo]);
 
   // Pagination logic
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -256,30 +253,6 @@ export default function ChartDashboard() {
   const uniqueReporters = new Set(filteredData.map(d => d.responsible_person).filter(Boolean)).size;
   const nearMissRate = totalIncidents ? (filteredData.filter(d => d.group_type === 'Near Miss').length / totalIncidents) * 100 : 0;
 
-  const decisionMetrics = useMemo(() => {
-    const today = new Date();
-    const iso = (date: Date) => date.toISOString().slice(0, 10);
-    const todayKey = iso(today);
-    const start30 = new Date(today); start30.setDate(today.getDate() - 29);
-    const start60 = new Date(today); start60.setDate(today.getDate() - 59);
-    const current30 = filteredData.filter(item => String(item.incident_date).slice(0, 10) >= iso(start30) && String(item.incident_date).slice(0, 10) <= todayKey);
-    const previous30 = data.filter(item => String(item.incident_date).slice(0, 10) >= iso(start60) && String(item.incident_date).slice(0, 10) < iso(start30));
-    const currentNear = current30.filter(item => item.group_type === 'Near Miss').length;
-    const previousNear = previous30.filter(item => item.group_type === 'Near Miss').length;
-    const unresolved = filteredData.filter(item => !item.resolution_status || item.resolution_status === 'Open' || item.resolution_status === 'In Progress');
-    const todayItems = filteredData.filter(item => String(item.incident_date).slice(0, 10) === todayKey).length;
-    const overdue = unresolved.filter(item => { const age = (today.getTime() - new Date(`${String(item.incident_date).slice(0, 10)}T00:00:00`).getTime()) / 86400000; return age > 7; }).length;
-    const verified = filteredData.filter(item => item.resolution_status === 'Verified').length;
-    const topDepartment = Object.entries(filteredData.reduce((acc: Record<string, number>, item) => { const dept = item.causing_department || 'ไม่ระบุหน่วยงาน'; acc[dept] = (acc[dept] || 0) + 1; return acc; }, {})).sort((a, b) => Number(b[1]) - Number(a[1]))[0];
-    const nearChange = previousNear ? ((currentNear - previousNear) / previousNear) * 100 : null;
-    const median = (values: number[]) => { if (!values.length) return null; const sorted = [...values].sort((a, b) => a - b); const middle = Math.floor(sorted.length / 2); return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2; };
-    const resolvedDurations = filteredData.filter(item => item.resolved_at && item.created_at).map(item => (new Date(item.resolved_at).getTime() - new Date(item.created_at).getTime()) / 86400000).filter(value => value >= 0);
-    const verifyDurations = filteredData.filter(item => item.verified_at && item.resolved_at).map(item => (new Date(item.verified_at).getTime() - new Date(item.resolved_at).getTime()) / 86400000).filter(value => value >= 0);
-    const slaRows = filteredData.filter(item => item.target_resolution_date);
-    const slaRate = slaRows.length ? (slaRows.filter(item => item.resolved_at && String(item.resolved_at).slice(0, 10) <= String(item.target_resolution_date).slice(0, 10) || (!item.resolved_at && String(item.target_resolution_date).slice(0, 10) >= todayKey)).length / slaRows.length) * 100 : null;
-    return { todayItems, overdue, unresolved, verified, topDepartment, nearChange, currentNear, previousNear, medianResolve: median(resolvedDurations), medianVerify: median(verifyDurations), slaRate };
-  }, [data, filteredData]);
-
   // 2. Proportion (Donut Chart)
   const proportionData = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -353,35 +326,14 @@ export default function ChartDashboard() {
               <label className="text-xs font-semibold text-slate-500">ปีงบประมาณ<select value={selectedYear} onChange={e => setSelectedYear(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกปีงบประมาณ</option>{years.map(y => <option key={y} value={y}>{y}</option>)}</select></label>
               <label className="text-xs font-semibold text-slate-500">เดือน<select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกเดือน</option>{MONTHS_TH.map((m, i) => <option key={i} value={i}>{m}</option>)}</select></label>
               <label className="text-xs font-semibold text-slate-500">ประเภท<select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกหมวดหมู่</option>{categories.map(c => <option key={c} value={c}>{c}</option>)}</select></label>
-              <label className="text-xs font-semibold text-slate-500">สถานะ<select value={selectedStatus} onChange={e => setSelectedStatus(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกสถานะ</option>{statuses.map(v => <option key={v} value={v}>{v}</option>)}</select></label>
               <label className="text-xs font-semibold text-slate-500">หน่วยงานที่เกิดเหตุ<select value={selectedDepartment} onChange={e => setSelectedDepartment(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกหน่วยงาน</option>{departments.map(v => <option key={v} value={v}>{v}</option>)}</select></label>
               <label className="text-xs font-semibold text-slate-500">ขั้นตอน<select value={selectedProcess} onChange={e => setSelectedProcess(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกขั้นตอน</option>{processes.map(v => <option key={v} value={v}>{v}</option>)}</select></label>
               <label className="text-xs font-semibold text-slate-500">กลุ่มเหตุการณ์<select value={selectedGroup} onChange={e => setSelectedGroup(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกกลุ่ม</option>{groups.map(v => <option key={v} value={v}>{v}</option>)}</select></label>
             </div>
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2"><span className="text-xs text-slate-500">กำลังแสดง <b className="text-slate-800">{filteredData.length}</b> รายการ</span><button onClick={() => { setSelectedYear('all'); setSelectedMonth('all'); setSelectedCategory('all'); setSelectedStatus('all'); setSelectedDepartment('all'); setSelectedProcess('all'); setSelectedGroup('all'); setDateFrom(''); setDateTo(''); }} className="text-xs font-bold text-maroon-700 hover:underline">ล้างตัวกรองทั้งหมด</button></div>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2"><span className="text-xs text-slate-500">กำลังแสดง <b className="text-slate-800">{filteredData.length}</b> รายการ</span><button onClick={() => { setSelectedYear('all'); setSelectedMonth('all'); setSelectedCategory('all'); setSelectedDepartment('all'); setSelectedProcess('all'); setSelectedGroup('all'); setDateFrom(''); setDateTo(''); }} className="text-xs font-bold text-maroon-700 hover:underline">ล้างตัวกรองทั้งหมด</button></div>
           </div>}
         </div>
       </div>
-
-      <section className="space-y-4">
-        <div className="rounded-2xl bg-[#4a0e18] p-5 text-white shadow-lg shadow-maroon-900/10">
-          <p className="text-xs font-bold uppercase tracking-[.16em] text-maroon-200">Decision brief</p>
-          <h2 className="mt-2 text-xl font-bold">สิ่งที่ผู้บริหารควรตัดสินใจวันนี้</h2>
-          <p className="mt-2 text-sm leading-6 text-maroon-100">{decisionMetrics.nearChange === null ? 'กำลังสะสมข้อมูลเพื่อเปรียบเทียบแนวโน้ม Near Miss' : `Near Miss ${decisionMetrics.nearChange < 0 ? 'ลดลง' : decisionMetrics.nearChange > 0 ? 'เพิ่มขึ้น' : 'ทรงตัว'} ${Math.abs(decisionMetrics.nearChange).toFixed(0)}% เมื่อเทียบกับ 30 วันก่อน`} และมี {decisionMetrics.unresolved.length} ประเด็นที่ยังไม่ปิด โดยหน่วยงานที่มีเหตุการณ์สูงสุดคือ {decisionMetrics.topDepartment?.[0] || 'ยังไม่มีข้อมูล'}</p>
-          <Link to="/data?date=today" className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-xs font-bold text-white transition hover:bg-white/20"><i className="fa-solid fa-arrow-right" />ดำเนินการวันนี้ ({decisionMetrics.todayItems})</Link>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[['ความเสี่ยงที่ต้องดำเนินการวันนี้', decisionMetrics.todayItems, 'fa-solid fa-calendar-day', 'bg-rose-50 text-rose-700'], ['ค้างเกิน SLA 7 วัน', decisionMetrics.overdue, 'fa-solid fa-hourglass-end', 'bg-amber-50 text-amber-700'], ['หน่วยงานที่มีเหตุการณ์สูงสุด', decisionMetrics.topDepartment?.[0] || '—', 'fa-solid fa-building', 'bg-violet-50 text-violet-700'], ['อัตราการปิดประเด็น', `${filteredData.length ? ((decisionMetrics.verified / filteredData.length) * 100).toFixed(0) : 0}%`, 'fa-solid fa-circle-check', 'bg-emerald-50 text-emerald-700']].map(([label, value, icon, tone]) => <div key={String(label)} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-start justify-between"><p className="max-w-[75%] text-sm font-semibold text-slate-500">{label}</p><span className={`flex h-10 w-10 items-center justify-center rounded-xl ${tone}`}><i className={String(icon)} /></span></div><p className="mt-5 truncate text-2xl font-bold text-slate-950">{value}</p><p className="mt-1 text-xs text-slate-400">จากข้อมูลตามตัวกรองปัจจุบัน</p></div>)}
-        </div>
-        <div className="grid gap-4 sm:grid-cols-3">
-          {[['Median Time to Resolution', decisionMetrics.medianResolve === null ? '—' : `${decisionMetrics.medianResolve.toFixed(1)} วัน`, 'fa-solid fa-stopwatch'], ['Median Time to Verify', decisionMetrics.medianVerify === null ? '—' : `${decisionMetrics.medianVerify.toFixed(1)} วัน`, 'fa-solid fa-user-check'], ['SLA Compliance Rate', decisionMetrics.slaRate === null ? '—' : `${decisionMetrics.slaRate.toFixed(0)}%`, 'fa-solid fa-gauge-high']].map(([label, value, icon]) => <div key={String(label)} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><p className="text-xs font-semibold text-slate-500"><i className="fa-solid fa-circle-info mr-1 text-slate-400" />{label}</p><p className="mt-2 flex items-center gap-2 text-2xl font-bold text-slate-900"><i className={`${icon} text-maroon-600 text-base`} />{value}</p><p className="mt-1 text-[11px] text-slate-400">คำนวณจาก timestamp ที่มีจริง</p></div>)}
-        </div>
-        <div className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-maroon-700">Open queue</p><h3 className="mt-1 text-lg font-bold text-slate-900">รายการที่สถานะยังเป็น Open</h3></div><span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-700">{filteredData.filter(item => !item.resolution_status || item.resolution_status === 'Open').length}</span></div><div className="mt-4 space-y-2">{filteredData.filter(item => !item.resolution_status || item.resolution_status === 'Open').slice(0, 3).map(item => <div key={item.id} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5 text-sm"><span className="truncate text-slate-700">{item.risk_type || 'Incident'} · {item.causing_department || 'ไม่ระบุหน่วยงาน'}</span><span className="font-mono text-[10px] text-slate-400">{String(item.incident_date).slice(0, 10)}</span></div>)}{!filteredData.some(item => !item.resolution_status || item.resolution_status === 'Open') && <p className="rounded-xl bg-emerald-50 p-3 text-xs text-emerald-700">ไม่มีรายการ Open ในตัวกรองนี้</p>}</div></div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-maroon-700">Verification queue</p><h3 className="mt-1 text-lg font-bold text-slate-900">รายการที่รอการ Verify</h3></div><span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-bold text-sky-700">{filteredData.filter(item => item.resolution_status === 'Resolved').length}</span></div><div className="mt-4 space-y-2">{filteredData.filter(item => item.resolution_status === 'Resolved').slice(0, 3).map(item => <div key={item.id} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5 text-sm"><span className="truncate text-slate-700">{item.risk_type || 'Incident'} · {item.responsible_person || 'ไม่ระบุผู้รับผิดชอบ'}</span><span className="font-mono text-[10px] text-slate-400">รอตรวจ</span></div>)}{!filteredData.some(item => item.resolution_status === 'Resolved') && <p className="rounded-xl bg-slate-50 p-3 text-xs text-slate-500">ไม่มีรายการรอ Verify ในตัวกรองนี้</p>}</div></div>
-        </div>
-        <p className="text-xs text-slate-400"><i className="fa-solid fa-circle-info mr-1" />Median Time to Resolution: ยังไม่แสดง เนื่องจากข้อมูลปัจจุบันยังไม่มี timestamp ตอน Resolved — ควรเพิ่มฟิลด์ resolved_at เพื่อให้ตัวชี้วัดนี้แม่นยำ</p>
-      </section>
 
       {/* Part 1: Executive KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

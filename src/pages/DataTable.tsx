@@ -37,10 +37,8 @@ export default function DataTable() {
   const [filterType, setFilterType] = useState<string>('all');
   const [filterImpact, setFilterImpact] = useState<string>('all');
   const [filterPerson, setFilterPerson] = useState<string>('all');
-  const filterStatus = searchParams.get('status') || 'all';
   const filterDate = searchParams.get('date') || 'all';
   const [filterQuarter, setFilterQuarter] = useState<string>('all');
-  const [filterStatusLocal, setFilterStatusLocal] = useState<string>('all');
   const [filterDepartment, setFilterDepartment] = useState<string>('all');
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
@@ -72,7 +70,6 @@ export default function DataTable() {
         setFilterImpact(value.filterImpact || 'all');
         setFilterPerson(value.filterPerson || 'all');
         setFilterQuarter(value.filterQuarter || 'all');
-        setFilterStatusLocal(value.filterStatusLocal || 'all');
         setFilterDepartment(value.filterDepartment || 'all');
         setDateFrom(value.dateFrom || '');
         setDateTo(value.dateTo || '');
@@ -86,8 +83,8 @@ export default function DataTable() {
 
   useEffect(() => {
     if (!filtersHydrated) return;
-    sessionStorage.setItem('lab-incident:data-table-filters', JSON.stringify({ searchTerm, filterYear, filterMonth, filterType, filterImpact, filterPerson, filterQuarter, filterStatusLocal, filterDepartment, dateFrom, dateTo }));
-  }, [filtersHydrated, searchTerm, filterYear, filterMonth, filterType, filterImpact, filterPerson, filterQuarter, filterStatusLocal, filterDepartment, dateFrom, dateTo]);
+    sessionStorage.setItem('lab-incident:data-table-filters', JSON.stringify({ searchTerm, filterYear, filterMonth, filterType, filterImpact, filterPerson, filterQuarter, filterDepartment, dateFrom, dateTo }));
+  }, [filtersHydrated, searchTerm, filterYear, filterMonth, filterType, filterImpact, filterPerson, filterQuarter, filterDepartment, dateFrom, dateTo]);
 
   const loadIncidents = async () => {
     try {
@@ -113,7 +110,6 @@ export default function DataTable() {
   }, [incidents]);
 
   const departments = useMemo(() => Array.from(new Set(incidents.map(inc => String(inc.causing_department || '').trim()).filter(Boolean))).sort(), [incidents]);
-  const statuses = ['Open', 'In Progress', 'Resolved', 'Verified', 'Reopened', 'Cancelled'];
   const getFiscalQuarter = (date: string) => { const month = dayjs(date).month() + 1; return month >= 10 ? '1' : month <= 3 ? '2' : month <= 6 ? '3' : '4'; };
   const getDepartmentStyle = (department: string | null) => {
     const value = String(department || '').trim().toUpperCase();
@@ -144,17 +140,15 @@ export default function DataTable() {
       const matchType = filterType === 'all' || inc.risk_type === filterType;
       const matchImpact = filterImpact === 'all' || inc.impact_level === filterImpact;
       const matchPerson = filterPerson === 'all' || inc.responsible_person === filterPerson;
-      const currentStatus = inc.resolution_status || 'Open';
-      const matchStatus = filterStatusLocal !== 'all' ? currentStatus === filterStatusLocal : (filterStatus === 'all' || (filterStatus === 'open' ? (currentStatus === 'Open' || currentStatus === 'In Progress') : currentStatus === filterStatus));
       const matchDate = filterDate === 'all' || (filterDate === 'today' && inc.incident_date === new Date().toISOString().slice(0, 10));
       const matchQuarter = filterQuarter === 'all' || getFiscalQuarter(inc.incident_date) === filterQuarter;
       const matchDepartment = filterDepartment === 'all' || String(inc.causing_department || '').trim() === filterDepartment;
       const matchFrom = !dateFrom || String(inc.incident_date).slice(0, 10) >= dateFrom;
       const matchTo = !dateTo || String(inc.incident_date).slice(0, 10) <= dateTo;
 
-      return matchSearch && matchYear && matchMonth && matchType && matchImpact && matchPerson && matchStatus && matchDate && matchQuarter && matchDepartment && matchFrom && matchTo;
+      return matchSearch && matchYear && matchMonth && matchType && matchImpact && matchPerson && matchDate && matchQuarter && matchDepartment && matchFrom && matchTo;
     });
-  }, [incidents, searchTerm, filterYear, filterMonth, filterType, filterImpact, filterPerson, filterStatus, filterDate, filterQuarter, filterStatusLocal, filterDepartment, dateFrom, dateTo]);
+  }, [incidents, searchTerm, filterYear, filterMonth, filterType, filterImpact, filterPerson, filterDate, filterQuarter, filterDepartment, dateFrom, dateTo]);
   const riskCatalog = useMemo(() => Array.from(new Set(incidents.flatMap(inc => [...(inc.risk_items || []), ...(inc.other_risk_item ? ['รายการอื่นๆ'] : [])]))), [incidents]);
   const riskNumberMap = useMemo(() => new Map(riskCatalog.map((item, index) => [item, index + 1])), [riskCatalog]);
   const getRiskLabel = (incident: Incident) => incident.other_risk_item || incident.risk_items?.[0] || 'ไม่ระบุ';
@@ -162,7 +156,6 @@ export default function DataTable() {
     const valueFor = (incident: Incident) => {
       if (sortConfig.key === 'risk') return getRiskLabel(incident);
       if (sortConfig.key === 'department') return incident.causing_department || '';
-      if (sortConfig.key === 'status') return incident.resolution_status || 'Open';
       if (sortConfig.key === 'impact') return incident.impact_level || '';
       if (sortConfig.key === 'type') return incident.risk_type || '';
       if (sortConfig.key === 'person') return incident.responsible_person || '';
@@ -178,7 +171,7 @@ export default function DataTable() {
   const requestSort = (key: string) => setSortConfig(current => ({ key, direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc' }));
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterYear, filterMonth, filterType, filterImpact, filterPerson, filterQuarter, filterStatusLocal, filterDepartment, dateFrom, dateTo, filterStatus, filterDate]);
+  }, [searchTerm, filterYear, filterMonth, filterType, filterImpact, filterPerson, filterQuarter, filterDepartment, dateFrom, dateTo]);
 
   const handleViewDetails = (incident: Incident) => {
     const detailsHtml = `
@@ -393,7 +386,6 @@ export default function DataTable() {
             { header: 'กลุ่ม', key: 'group_type', width: 15 },
             { header: 'ผู้รับผิดชอบ', key: 'responsible_person', width: 20 },
             { header: 'หน่วยงาน', key: 'causing_department', width: 20 },
-            { header: 'สถานะปิดประเด็น', key: 'resolution_status', width: 18 },
             { header: 'รายละเอียด', key: 'incident_details', width: 50 },
             { header: 'การแก้ไขเบื้องต้น', key: 'initial_response', width: 50 },
             { header: 'แนวทางปฏิบัติ', key: 'guideline', width: 50 },
@@ -411,7 +403,6 @@ export default function DataTable() {
               group_type: incident.group_type,
               responsible_person: incident.responsible_person || '-',
               causing_department: incident.causing_department || '-',
-              resolution_status: incident.resolution_status || 'Open',
               incident_details: incident.incident_details,
               initial_response: incident.initial_response,
               guideline: incident.guideline,
@@ -493,11 +484,9 @@ export default function DataTable() {
               <label className="text-xs font-semibold text-slate-500">เดือน<select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกเดือน</option>{['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'].map((m, i) => <option key={i} value={String(i + 1).padStart(2, '0')}>{m}</option>)}</select></label>
               <label className="text-xs font-semibold text-slate-500">ประเภท<select value={filterType} onChange={e => setFilterType(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกประเภท</option><option value="Clinic">Clinic</option><option value="Non-clinic">Non-clinic</option></select></label>
               <label className="text-xs font-semibold text-slate-500">ระดับผลกระทบ<select value={filterImpact} onChange={e => setFilterImpact(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกระดับ</option>{['A','B','C','D','E','F','G','H','I','0','1','2','3','4'].map(v => <option key={v} value={v}>ระดับ {v}</option>)}</select></label>
-              <label className="text-xs font-semibold text-slate-500">สถานะ<select value={filterStatusLocal} onChange={e => setFilterStatusLocal(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกสถานะ</option>{statuses.map(v => <option key={v} value={v}>{v}</option>)}</select></label>
               <label className="text-xs font-semibold text-slate-500">หน่วยงานที่เกิดเหตุ<select value={filterDepartment} onChange={e => setFilterDepartment(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกหน่วยงาน</option>{departments.map(v => <option key={v} value={v}>{v}</option>)}</select></label>
               <label className="text-xs font-semibold text-slate-500">ผู้รับผิดชอบ<select value={filterPerson} onChange={e => setFilterPerson(e.target.value)} className="mt-1 w-full rounded-xl border-slate-200 bg-white text-sm"><option value="all">ทุกคน</option>{persons.map(person => <option key={person} value={String(person)}>{person}</option>)}</select></label>
-              <label className="text-xs font-semibold text-slate-500">กรองจาก URL<select value={filterStatus === 'open' ? 'open' : filterDate === 'today' ? 'today' : 'all'} disabled className="mt-1 w-full rounded-xl border-slate-200 bg-slate-100 text-sm"><option value="all">ตัวกรองปกติ</option><option value="open">รายการยังไม่ปิด</option><option value="today">รายการวันนี้</option></select></label>
-              <div className="flex items-end"><button onClick={() => { setSearchTerm(''); setFilterYear('all'); setFilterMonth('all'); setFilterType('all'); setFilterImpact('all'); setFilterPerson('all'); setFilterQuarter('all'); setFilterStatusLocal('all'); setFilterDepartment('all'); setDateFrom(''); setDateTo(''); }} className="w-full rounded-xl border border-maroon-200 bg-white px-3 py-2.5 text-sm font-bold text-maroon-700 hover:bg-maroon-50">ล้างตัวกรองทั้งหมด</button></div>
+              <div className="flex items-end"><button onClick={() => { setSearchTerm(''); setFilterYear('all'); setFilterMonth('all'); setFilterType('all'); setFilterImpact('all'); setFilterPerson('all'); setFilterQuarter('all'); setFilterDepartment('all'); setDateFrom(''); setDateTo(''); }} className="w-full rounded-xl border border-maroon-200 bg-white px-3 py-2.5 text-sm font-bold text-maroon-700 hover:bg-maroon-50">ล้างตัวกรองทั้งหมด</button></div>
             </div>}
             <p className="mt-3 text-xs text-slate-500">กำลังแสดง <b className="text-slate-800">{filteredData.length}</b> รายการ · Export จะใช้ข้อมูลตามตัวกรองนี้</p>
           </div>
@@ -507,7 +496,7 @@ export default function DataTable() {
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-slate-700 uppercase bg-slate-50 border-b border-slate-200 shadow-sm [&>tr>th]:sticky [&>tr>th]:top-0 [&>tr>th]:z-20 [&>tr>th]:bg-slate-50">
                 <tr>
-                  {([['incident_date', 'วันที่'], ['type', 'ประเภท'], ['risk', 'รายการความเสี่ยง'], ['department', 'หน่วยงานที่เกิดเหตุ'], ['impact', 'ระดับ'], ['status', 'สถานะ'], ['person', 'ผู้รับผิดชอบ']] as const).map(([key, label]) => <th key={key} className={cn('px-4 py-3', key === 'impact' && 'text-center')}><button onClick={() => requestSort(key)} className="inline-flex items-center gap-1.5 font-bold transition hover:text-maroon-700" title={`เรียงตาม${label}`}>{label}<i className={cn('fa-solid text-[10px]', sortConfig.key === key ? (sortConfig.direction === 'asc' ? 'fa-arrow-up-wide-short text-maroon-600' : 'fa-arrow-down-wide-short text-maroon-600') : 'fa-sort text-slate-300')} /></button></th>)}
+                  {([['incident_date', 'วันที่'], ['type', 'ประเภท'], ['risk', 'รายการความเสี่ยง'], ['department', 'หน่วยงานที่เกิดเหตุ'], ['impact', 'ระดับ'], ['person', 'ผู้รับผิดชอบ']] as const).map(([key, label]) => <th key={key} className={cn('px-4 py-3', key === 'impact' && 'text-center')}><button onClick={() => requestSort(key)} className="inline-flex items-center gap-1.5 font-bold transition hover:text-maroon-700" title={`เรียงตาม${label}`}>{label}<i className={cn('fa-solid text-[10px]', sortConfig.key === key ? (sortConfig.direction === 'asc' ? 'fa-arrow-up-wide-short text-maroon-600' : 'fa-arrow-down-wide-short text-maroon-600') : 'fa-sort text-slate-300')} /></button></th>)}
                   <th className="px-4 py-3 text-center">จัดการ</th>
                 </tr>
               </thead>
@@ -593,12 +582,7 @@ export default function DataTable() {
                                 <option value="Near Miss">Near Miss</option>
                               </select>
                             </div>
-                            <div>
-                              <label className="block text-xs font-medium text-slate-500 mb-1">สถานะการปิดประเด็น</label>
-                              <select value={editData.resolution_status || 'Open'} onChange={e => setEditData({...editData, resolution_status: e.target.value as Incident['resolution_status']})} className="w-full p-2 border rounded-lg text-sm">
-                                {['Open', 'In Progress', 'Resolved', 'Verified'].map(status => <option key={status} value={status}>{status}</option>)}
-                              </select>
-                            </div>
+
                             <div>
                               <label className="block text-xs font-medium text-slate-500 mb-1">ผู้รับผิดชอบ</label>
                               <select 
@@ -743,7 +727,6 @@ export default function DataTable() {
                               );
                             })()}
                           </td>
-                          <td className="px-4 py-3"><span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", incident.resolution_status === 'Verified' ? 'bg-emerald-100 text-emerald-700' : incident.resolution_status === 'Resolved' ? 'bg-sky-100 text-sky-700' : incident.resolution_status === 'In Progress' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600')}>{incident.resolution_status || 'Open'}</span></td>
                           <td className="px-4 py-3">
                             {incident.responsible_person || '-'}
                           </td>
